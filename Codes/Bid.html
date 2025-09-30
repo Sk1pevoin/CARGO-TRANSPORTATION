@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="rus">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заявка</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+    <h1>Грузоперевозки</h1>
+    <nav>
+      <a href="Web.html">Главная</a>
+      <a href="Calc.html">Калькулятор</a>
+      <a href="#">О нас</a>
+      <a href="services.html">Услуги</a>
+      <a href="#" class="active">Заявка</a>
+      <a href="#">Кабинет</a>
+      <a href="Contacts.html">Контакты</a>
+    </nav>
+</header>
+
+<main>
+    <div class="zayavka-container">
+        <h2>Оставить заявку</h2>
+        <div class="zayavka-content">
+            <form id="zayavkaForm" class="zayavka-form">
+                <label for="from">Откуда</label>
+                <input type="text" id="from" name="otkuda" placeholder="Город, улица" required>
+
+                <label for="to">Куда</label>
+                <input type="text" id="to" name="kuda" placeholder="Город, улица" required>
+
+                <div class="form-row">
+                    <div>
+                        <label for="weight">Вес</label>
+                        <select id="weight" name="ves">
+                            <option>кг</option>
+                            <option>т</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="type">Тип груза</label>
+                        <select id="type" name="tip">
+                            <option>Обычный</option>
+                            <option>Хрупкий</option>
+                            <option>Негабаритный</option>
+                        </select>
+                    </div>
+                </div>
+
+                <label for="date">Дата</label>
+                <input type="date" id="date" name="date" required>
+
+                <button type="submit">Отправить заявку</button>
+            </form>
+
+            <div class="zayavka-image">
+                <img src="truck.jpg" alt="Грузовик">
+            </div>
+        </div>
+
+        <div id="zayavkiList"></div>
+    </div>
+</main>
+
+<footer>
+    <div>
+        <p>📞 +375 (29) 000-00-00</p>
+        <p>📧 example@gmail.com</p>
+        <p>📍 Минск, улица Примерная, 1</p>
+    </div>
+    <div>
+        <p>© 2015 Грузоперевозки</p>
+        <a href="#">Telegram</a> | <a href="#">Instagram</a> | <a href="#">Facebook</a>
+    </div>
+</footer>
+<script src = "script.js"></script>
+</body>
+</html>
