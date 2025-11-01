@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="rus">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Регистрация</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="login-container">
+    <h2>Регистрация</h2>
+    <form id="registerForm">
+      <label for="newUsername">Логин:</label>
+      <input type="text" id="newUsername" required>
+
+      <label for="newPassword">Пароль:</label>
+      <input type="password" id="newPassword" required>
+
+      <button type="submit">Зарегистрироваться</button>
+      <p id="success-message" style="color:green; display:none; margin-top:10px;">
+        Пользователь успешно зарегистрирован!
+      </p>
+    </form>
+    <p>Уже есть аккаунт? <a href="login.html">Войти</a></p>
+  </div>
+<script src="database.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

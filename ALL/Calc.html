@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="rus">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+    <h1>Грузоперевозки</h1>
+    <nav>
+      <a href="#"><a href = "Web.html">Главная</a></a>
+      <a href="#" class="active">Калькулятор</a>
+      <a href="#">О нас</a>
+      <a href="#"><a href = "services.html">Услуги</a></a>
+      <a href="#"><a href = "Bid.html">Заявка</a></a>
+      <a href="#">Кабинет</a>
+      <a href="#"><a href = "Contacts.html">Контакты</a></a>
+    </nav>
+  </header>
+  <main>
+  <div class="title">
+    Рассчитать стоимость перевозки
+  </div>
+  <form class="calculator">
+    <div>
+      <label for="from">Откуда</label>
+      <input type="text" id="from" placeholder="Город">
+    </div>
+    <div>
+      <label for="to">Куда</label>
+      <input type="text" id="to" placeholder="Город">
+    </div>
+    <div>
+      <label for="weight">Вес груза</label>
+      <input type="number" id="weight" placeholder="кг">
+    </div>
+    <div>
+      <label for="type">Тип груза</label>
+      <select id="type">
+        <option>Обычный</option>
+        <option>Хрупкий</option>
+        <option>Опасный</option>
+      </select>
+    </div>
+    <div>
+      <label for="date">Дата перевозки</label>
+      <input type="text" id="date" placeholder="ДД.ММ.ГГГГ">
+    </div>
+    <div></div>
+    <button type="submit">Рассчитать</button>
+  </form>
+</main>
+<footer>
+    <div>
+      <p>📞 +375 (29) 000-00-00</p>
+      <p>📧 example@gmail.com</p>
+      <p>📍 Минск, улица Примерная, 1</p>
+    </div>
+    <div>
+      <p>© 2015 Грузоперевозки</p>
+      <a href="#">Telegram</a> | <a href="#">Instagram</a> | <a href="#">Facebook</a>
+    </div>
+  </footer>
+<script src="database.js"></script>
+<script src="script.js"></script>
+</body>
+
+</html>
