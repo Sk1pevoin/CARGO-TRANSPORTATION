@@ -10,21 +10,100 @@
   <header class="admin-header">
     <h1>Админ-панель</h1>
     <nav>
-      <a href="main.html">Главная</a>
-      <a href="users.html">Пользователи</a>
-      <a href="#"><font color = "red">Заявки</font></a>
-      <a href="settings.html">Настройки</a>
-      <a href="Web.html">Выйти</a>
+      <a href="#" onclick="showDashboard(); return false;">Дашборд</a>
+      <a href="#" onclick="showBids(); return false;"><font color = "red">Заявки</font></a>
+      <a href="#" onclick="showTransport(); return false;">Транспорт</a>
+      <a href="#" onclick="showQueue(); return false;">Очередь</a>
+      <a href="register.html">Выйти</a>
     </nav>
   </header>
-  <h1>Заявки клиентов</h1>
-    <div id="zayavkiList"></div>
+
+  <main class="admin-main">
+    <!-- Дашборд -->
+    <div id="dashboard" class="admin-section">
+      <h2>Дашборд</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Всего заявок</h3>
+          <p id="totalBids">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>В очереди</h3>
+          <p id="queueBids">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>В работе</h3>
+          <p id="activeBids">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Свободный транспорт</h3>
+          <p id="availableTransport">0</p>
+        </div>
+      </div>
+
+      <div class="suggestions-section">
+        <h3>Предложения по распределению</h3>
+        <div id="suggestionsList"></div>
+      </div>
+    </div>
+
+    <!-- Заявки -->
+    <div id="bidsSection" class="admin-section" style="display: none;">
+      <h2>Заявки клиентов</h2>
+      <div id="zayavkiList"></div>
+    </div>
+
+    <!-- Транспорт -->
+    <div id="transportSection" class="admin-section" style="display: none;">
+      <h2>Управление транспортом</h2>
+      <div class="transport-controls">
+        <button onclick="addTransportModal()" class="btn-primary">Добавить транспорт</button>
+      </div>
+      <div id="transportList"></div>
+      <div id="activeOrdersList"></div>
+    </div>
+
+    <!-- Очередь заявок -->
+    <div id="queueSection" class="admin-section" style="display: none;">
+      <h2>Очередь заявок</h2>
+      <div id="queueList"></div>
+    </div>
+  </main>
 
   <footer>
     <p>© 2025 Админ-панель грузоперевозок</p>
   </footer>
 
+  <!-- Модальное окно для добавления транспорта -->
+  <div id="transportModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeTransportModal()">&times;</span>
+      <h3>Добавить транспортное средство</h3>
+      <form id="transportForm">
+        <label>Модель:</label>
+        <input type="text" id="truckModel" required>
+        
+        <label>Гос. номер:</label>
+        <input type="text" id="truckPlate" required>
+        
+        <label>Грузоподъемность (кг):</label>
+        <input type="number" id="truckCapacity" required>
+        
+        <button type="submit">Добавить</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модальное окно для распределения заявки -->
+  <div id="assignModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeAssignModal()">&times;</span>
+      <h3>Распределить заявку</h3>
+      <div id="assignContent"></div>
+    </div>
+  </div>
+
   <script src="database.js"></script>
-<script src="admin.js"></script>
+  <script src="admin.js"></script>
 </body>
 </html>

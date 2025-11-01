@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="rus">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Грузоперевозки</h1>
+        <nav>
+            <a href="Web.html">Главная</a>
+            <a href="Calc.html">Калькулятор</a>
+            <a href="#">О нас</a>
+            <a href="services.html">Услуги</a>
+            <a href="Bid.html">Заявка</a>
+            <a href="#" class="active">Кабинет</a>
+            <a href="Contacts.html">Контакты</a>
+            <a href="register.html" class="logout-link">Выйти</a>
+        </nav>
+    </header>
+
+    <main class="cabinet-main">
+        <!-- Проверка авторизации -->
+        <div id="authCheck" style="display: none;">
+            <div class="auth-required">
+                <h2>⚠️ Требуется авторизация</h2>
+                <p>Для доступа к личному кабинету необходимо войти в систему.</p>
+                <a href="login.html" class="btn-primary">Войти</a>
+                <a href="register.html" class="btn-secondary">Зарегистрироваться</a>
+            </div>
+        </div>
+
+        <!-- Контент кабинета -->
+        <div id="cabinetContent" class="cabinet-container">
+            <!-- Информация о пользователе -->
+            <section class="cabinet-section">
+                <div class="cabinet-header">
+                    <div class="user-info">
+                        <div class="user-avatar">👤</div>
+                        <div class="user-details">
+                            <h2 id="userName">Пользователь</h2>
+                            <p id="userLogin" class="user-login">@login</p>
+                        </div>
+                    </div>
+                    <button onclick="editProfile()" class="btn-edit">✏️ Редактировать</button>
+                </div>
+            </section>
+
+            <!-- Статистика -->
+            <section class="cabinet-section">
+                <h3 class="section-title">📊 Статистика заявок</h3>
+                <div class="stats-cards">
+                    <div class="stat-card-small">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-info">
+                            <p class="stat-label">Всего заявок</p>
+                            <p class="stat-value" id="totalBidsCount">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card-small">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-info">
+                            <p class="stat-label">В очереди</p>
+                            <p class="stat-value" id="queueBidsCount">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card-small">
+                        <div class="stat-icon">🚛</div>
+                        <div class="stat-info">
+                            <p class="stat-label">В работе</p>
+                            <p class="stat-value" id="activeBidsCount">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card-small">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-info">
+                            <p class="stat-label">Выполнено</p>
+                            <p class="stat-value" id="completedBidsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Заявки пользователя -->
+            <section class="cabinet-section">
+                <div class="section-header">
+                    <h3 class="section-title">📝 Мои заявки</h3>
+                    <div class="filter-tabs">
+                        <button onclick="filterBids('all')" class="filter-tab active" id="filter-all">Все</button>
+                        <button onclick="filterBids('новая')" class="filter-tab" id="filter-new">Новые</button>
+                        <button onclick="filterBids('в работе')" class="filter-tab" id="filter-active">В работе</button>
+                        <button onclick="filterBids('выполнена')" class="filter-tab" id="filter-completed">Выполненные</button>
+                    </div>
+                </div>
+                <div id="bidsList" class="bids-list-cabinet">
+                    <!-- Заявки загружаются динамически -->
+                </div>
+            </section>
+
+            <!-- Быстрые действия -->
+            <section class="cabinet-section">
+                <h3 class="section-title">⚡ Быстрые действия</h3>
+                <div class="quick-actions">
+                    <a href="Bid.html" class="quick-action-card">
+                        <div class="action-icon">➕</div>
+                        <h4>Новая заявка</h4>
+                        <p>Создать заявку на перевозку</p>
+                    </a>
+                    <a href="Calc.html" class="quick-action-card">
+                        <div class="action-icon">🧮</div>
+                        <h4>Калькулятор</h4>
+                        <p>Рассчитать стоимость</p>
+                    </a>
+                    <a href="services.html" class="quick-action-card">
+                        <div class="action-icon">📦</div>
+                        <h4>Услуги</h4>
+                        <p>Посмотреть услуги</p>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div>
+            <p>📞 +375 (29) 000-00-00</p>
+            <p>📧 example@gmail.com</p>
+            <p>📍 Минск, улица Примерная, 1</p>
+        </div>
+        <div>
+            <p>© 2015 Грузоперевозки</p>
+            <a href="#">Telegram</a> | <a href="#">Instagram</a> | <a href="#">Facebook</a>
+        </div>
+    </footer>
+
+    <!-- Модальное окно редактирования профиля -->
+    <div id="editProfileModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h3>Редактировать профиль</h3>
+            <form id="editProfileForm">
+                <label>Имя:</label>
+                <input type="text" id="editUserName" placeholder="Введите имя">
+                
+                <label>Email:</label>
+                <input type="email" id="editUserEmail" placeholder="Введите email">
+                
+                <label>Телефон:</label>
+                <input type="tel" id="editUserPhone" placeholder="Введите телефон">
+                
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-primary">Сохранить</button>
+                    <button type="button" onclick="closeEditModal()" class="btn-secondary">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="database.js"></script>
+    <script src="script.js"></script>
+    <script src="cabinet.js"></script>
+</body>
+</html>
+

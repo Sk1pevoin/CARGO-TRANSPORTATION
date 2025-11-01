@@ -8,42 +8,160 @@
 </head>
 <body>
     <header>
-    <h1>Грузоперевозки</h1>
-    <nav>
-      <a href="#"><a href = "Web.html">Главная</a></a>
-      <a href="#"><a href = "Calc.html">Калькулятор</a></a>
-      <a href="#">О нас</a>
-      <a href="#"><a href = "services.html">Услуги</a></a>
-      <a href="#"><a href = "Bid.html">Заявка</a></a>
-      <a href="#">Кабинет</a>
-      <a href="#" class = "active">Контакты</a></a>
-    </nav>
-  </header>
+        <h1>Грузоперевозки</h1>
+        <nav>
+            <a href="Web.html">Главная</a>
+            <a href="Calc.html">Калькулятор</a>
+            <a href="#">О нас</a>
+            <a href="services.html">Услуги</a>
+            <a href="Bid.html">Заявка</a>
+            <a href="cabinet.html">Кабинет</a>
+            <a href="#" class="active">Контакты</a>
+        </nav>
+    </header>
 
-  <main>
-    <div class = "main">
-        Контакты
-    </div>
+    <main>
+        <div class="contacts-hero">
+            <h1>Свяжитесь с нами</h1>
+            <p>Мы всегда готовы помочь вам с грузоперевозками</p>
+        </div>
 
+        <div class="contacts-container">
+            <!-- Контактная информация -->
+            <section class="contacts-info-section">
+                <h2>Наши контакты</h2>
+                <div class="contacts-grid">
+                    <div class="contact-card">
+                        <div class="contact-icon">📞</div>
+                        <h3>Телефон</h3>
+                        <p>+375 (29) 000-00-00</p>
+                        <p>+375 (33) 000-00-00</p>
+                        <span class="contact-time">Пн-Пт: 9:00 - 18:00</span>
+                    </div>
+                    
+                    <div class="contact-card">
+                        <div class="contact-icon">📧</div>
+                        <h3>Email</h3>
+                        <p>info@cargo-transport.by</p>
+                        <p>orders@cargo-transport.by</p>
+                        <span class="contact-time">Ответим в течение часа</span>
+                    </div>
+                    
+                    <div class="contact-card">
+                        <div class="contact-icon">📍</div>
+                        <h3>Адрес</h3>
+                        <p>Минск, улица Примерная, 1</p>
+                        <p>Офис: кабинет 101</p>
+                        <span class="contact-time">Прием по записи</span>
+                    </div>
+                    
+                    <div class="contact-card">
+                        <div class="contact-icon">💬</div>
+                        <h3>Социальные сети</h3>
+                        <div class="social-links">
+                            <a href="#" class="social-link">Telegram</a>
+                            <a href="#" class="social-link">Instagram</a>
+                            <a href="#" class="social-link">Facebook</a>
+                        </div>
+                        <span class="contact-time">Онлайн поддержка</span>
+                    </div>
+                </div>
+            </section>
 
+            <!-- Форма обратной связи -->
+            <section class="contacts-form-section">
+                <h2>Напишите нам</h2>
+                <div class="contact-form-wrapper">
+                    <form id="contactForm" class="contact-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contactName">
+                                    <span class="label-icon">👤</span>
+                                    Ваше имя
+                                </label>
+                                <input type="text" id="contactName" name="name" placeholder="Введите ваше имя" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="contactPhone">
+                                    <span class="label-icon">📱</span>
+                                    Телефон
+                                </label>
+                                <input type="tel" id="contactPhone" name="phone" placeholder="+375 (XX) XXX-XX-XX" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contactEmail">
+                                <span class="label-icon">📧</span>
+                                Email
+                            </label>
+                            <input type="email" id="contactEmail" name="email" placeholder="your.email@example.com" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contactSubject">
+                                <span class="label-icon">📋</span>
+                                Тема обращения
+                            </label>
+                            <select id="contactSubject" name="subject" required>
+                                <option value="">Выберите тему</option>
+                                <option value="question">Вопрос</option>
+                                <option value="order">Заказ</option>
+                                <option value="complaint">Жалоба</option>
+                                <option value="suggestion">Предложение</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contactMessage">
+                                <span class="label-icon">✉️</span>
+                                Сообщение
+                            </label>
+                            <textarea id="contactMessage" name="message" rows="5" placeholder="Опишите ваш вопрос или запрос..." required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="contact-submit-btn">
+                            <span>Отправить сообщение</span>
+                        </button>
+                        
+                        <div id="contactSuccessMessage" class="message success-message" style="display: none;">
+                            <span class="message-icon">✓</span>
+                            <span>Спасибо! Ваше сообщение отправлено. Мы свяжемся с вами в ближайшее время.</span>
+                        </div>
+                    </form>
+                </div>
+            </section>
 
+            <!-- Карта (заглушка) -->
+            <section class="contacts-map-section">
+                <h2>Как нас найти</h2>
+                <div class="map-container">
+                    <div class="map-placeholder">
+                        <div class="map-icon">🗺️</div>
+                        <p>Минск, улица Примерная, 1</p>
+                        <p class="map-note">Интерактивная карта</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
 
+    <footer>
+        <div>
+            <p>📞 +375 (29) 000-00-00</p>
+            <p>📧 example@gmail.com</p>
+            <p>📍 Минск, улица Примерная, 1</p>
+        </div>
+        <div>
+            <p>© 2015 Грузоперевозки</p>
+            <a href="#">Telegram</a> | <a href="#">Instagram</a> | <a href="#">Facebook</a>
+        </div>
+    </footer>
 
-
-    
-  </main>
-  <footer>
-    <div>
-      <p>📞 +375 (29) 000-00-00</p>
-      <p>📧 example@gmail.com</p>
-      <p>📍 Минск, улица Примерная, 1</p>
-    </div>
-    <div>
-      <p>© 2015 Грузоперевозки</p>
-      <a href="#">Telegram</a> | <a href="#">Instagram</a> | <a href="#">Facebook</a>
-    </div>
-  </footer>
-<script src="database.js"></script>
-<script src="script.js"></script>
+    <script src="database.js"></script>
+    <script src="script.js"></script>
+    <script src="contacts.js"></script>
 </body>
 </html>
