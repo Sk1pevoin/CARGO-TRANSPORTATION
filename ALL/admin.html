@@ -19,9 +19,21 @@
   </header>
 
   <main class="admin-main">
-    <!-- Дашборд -->
     <div id="dashboard" class="admin-section">
-      <h2>Дашборд</h2>
+      <div class="admin-titlebar">
+        <h2>Дашборд</h2>
+        <div class="admin-actions">
+          <input type="text" id="globalSearch" class="admin-search" placeholder="Поиск заявок, маршрутов, транспорта..." oninput="adminPanel.handleGlobalSearch(this.value)">
+          <select id="statusFilter" class="admin-select" onchange="adminPanel.applyStatusFilter(this.value)">
+            <option value="all">Все статусы</option>
+            <option value="новая">Новые</option>
+            <option value="в работе">В работе</option>
+            <option value="выполнена">Выполненные</option>
+            <option value="отменена">Отмененные</option>
+          </select>
+        </div>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-card">
           <h3>Всего заявок</h3>
@@ -47,13 +59,23 @@
       </div>
     </div>
 
-    <!-- Заявки -->
     <div id="bidsSection" class="admin-section" style="display: none;">
-      <h2>Заявки клиентов</h2>
+      <div class="admin-titlebar">
+        <h2>Заявки клиентов</h2>
+        <div class="admin-actions">
+          <input type="text" id="bidSearch" class="admin-search" placeholder="Искать по маршруту..." oninput="adminPanel.filterBids()">
+          <select id="bidStatus" class="admin-select" onchange="adminPanel.filterBids()">
+            <option value="all">Все</option>
+            <option value="новая">Новые</option>
+            <option value="в работе">В работе</option>
+            <option value="выполнена">Выполненные</option>
+            <option value="отменена">Отмененные</option>
+          </select>
+        </div>
+      </div>
       <div id="zayavkiList"></div>
     </div>
 
-    <!-- Транспорт -->
     <div id="transportSection" class="admin-section" style="display: none;">
       <h2>Управление транспортом</h2>
       <div class="transport-controls">
@@ -63,7 +85,6 @@
       <div id="activeOrdersList"></div>
     </div>
 
-    <!-- Очередь заявок -->
     <div id="queueSection" class="admin-section" style="display: none;">
       <h2>Очередь заявок</h2>
       <div id="queueList"></div>
@@ -71,10 +92,9 @@
   </main>
 
   <footer>
-    <p>© 2025 Админ-панель грузоперевозок</p>
+    <p>© 2015 Админ-панель грузоперевозок</p>
   </footer>
 
-  <!-- Модальное окно для добавления транспорта -->
   <div id="transportModal" class="modal" style="display: none;">
     <div class="modal-content">
       <span class="close" onclick="closeTransportModal()">&times;</span>
@@ -94,7 +114,6 @@
     </div>
   </div>
 
-  <!-- Модальное окно для распределения заявки -->
   <div id="assignModal" class="modal" style="display: none;">
     <div class="modal-content">
       <span class="close" onclick="closeAssignModal()">&times;</span>

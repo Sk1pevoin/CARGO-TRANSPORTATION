@@ -8,7 +8,7 @@
 </head>
 <body>
     <header>
-        <h1>Грузоперевозки</h1>
+        <h1><a href="Web.html" style="text-decoration: none; color: #fff;">Грузоперевозки</a></h1>
         <nav>
             <a href="Web.html">Главная</a>
             <a href="Calc.html">Калькулятор</a>
@@ -22,7 +22,7 @@
     </header>
 
     <main class="cabinet-main">
-        <!-- Проверка авторизации -->
+
         <div id="authCheck" style="display: none;">
             <div class="auth-required">
                 <h2>⚠️ Требуется авторизация</h2>
@@ -32,9 +32,7 @@
             </div>
         </div>
 
-        <!-- Контент кабинета -->
         <div id="cabinetContent" class="cabinet-container">
-            <!-- Информация о пользователе -->
             <section class="cabinet-section">
                 <div class="cabinet-header">
                     <div class="user-info">
@@ -48,7 +46,6 @@
                 </div>
             </section>
 
-            <!-- Статистика -->
             <section class="cabinet-section">
                 <h3 class="section-title">📊 Статистика заявок</h3>
                 <div class="stats-cards">
@@ -83,7 +80,6 @@
                 </div>
             </section>
 
-            <!-- Заявки пользователя -->
             <section class="cabinet-section">
                 <div class="section-header">
                     <h3 class="section-title">📝 Мои заявки</h3>
@@ -95,11 +91,9 @@
                     </div>
                 </div>
                 <div id="bidsList" class="bids-list-cabinet">
-                    <!-- Заявки загружаются динамически -->
                 </div>
             </section>
 
-            <!-- Быстрые действия -->
             <section class="cabinet-section">
                 <h3 class="section-title">⚡ Быстрые действия</h3>
                 <div class="quick-actions">
@@ -135,7 +129,6 @@
         </div>
     </footer>
 
-    <!-- Модальное окно редактирования профиля -->
     <div id="editProfileModal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close" onclick="closeEditModal()">&times;</span>
