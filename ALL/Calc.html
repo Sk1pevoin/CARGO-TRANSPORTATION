@@ -8,50 +8,135 @@
 </head>
 <body>
     <header>
-    <h1>Грузоперевозки</h1>
+    <h1><a href="Web.html" style="text-decoration: none; color: #fff;">Грузоперевозки</a></h1>
     <nav>
-      <a href="#"><a href = "Web.html">Главная</a></a>
-      <a href="#" class="active">Калькулятор</a>
-      <a href="#">О нас</a>
-      <a href="#"><a href = "services.html">Услуги</a></a>
-      <a href="#"><a href = "Bid.html">Заявка</a></a>
-      <a href="#">Кабинет</a>
-      <a href="#"><a href = "Contacts.html">Контакты</a></a>
+        <a href="Web.html">Главная</a>
+        <a href="Calc.html">Калькулятор</a>
+        <a href="About.html">О нас</a>
+        <a href="services.html">Услуги</a>
+        <a href="Bid.html">Заявка</a>
+        <a href="Contacts.html">Контакты</a>
+        
+        <!-- Ссылка для администратора (видна только админам) -->
+        <a href="admin.html" data-admin style="display: none; color: #ffeb3b;">
+            <strong>Админ-панель</strong>
+        </a>
+        
+        <!-- Для авторизованных пользователей -->
+        <span data-user style="display: none;">
+            <a href="cabinet.html">Личный кабинет</a>
+            <a href="#" onclick="authManager.logout()" style="color: #ff6b6b;">Выйти</a>
+        </span>
+        
+        <!-- Для гостей -->
+        <span data-guest style="display: none;">
+            <a href="login.html">Войти</a>
+            <a href="register.html">Регистрация</a>
+        </span>
     </nav>
-  </header>
+</header>
   <main>
-  <div class="title">
-    Рассчитать стоимость перевозки
-  </div>
-  <form class="calculator">
-    <div>
-      <label for="from">Откуда</label>
-      <input type="text" id="from" placeholder="Город">
+    <div class="title">
+      Рассчитать стоимость перевозки
     </div>
-    <div>
-      <label for="to">Куда</label>
-      <input type="text" id="to" placeholder="Город">
+    
+    <div class="calculator-wrapper">
+      <form class="calculator" id="calculatorForm">
+        <div class="calculator-header">
+          <h3>🧮 Калькулятор стоимости</h3>
+          <p>Заполните форму и узнайте примерную стоимость перевозки</p>
+          <div class = "calculator-image">
+              <img src = "/Photos/furniture.jpg">
+          </div>
+        </div>
+        
+        <div class="calculator-fields">
+          <div>
+            <label for="from">
+              <span class="label-icon">📍</span>
+              Откуда
+            </label>
+            <input type="text" id="from" name="from" placeholder="Город отправления" required>
+          </div>
+          
+          <div>
+            <label for="to">
+              <span class="label-icon">🎯</span>
+              Куда
+            </label>
+            <input type="text" id="to" name="to" placeholder="Город назначения" required>
+          </div>
+          
+          <div>
+            <label for="weight">
+              <span class="label-icon">⚖️</span>
+              Вес груза (кг)
+            </label>
+            <input type="number" id="weight" name="weight" placeholder="Введите вес" min="0" step="0.01" required>
+          </div>
+          
+          <div>
+            <label for="type">
+              <span class="label-icon">📦</span>
+              Тип груза
+            </label>
+            <select id="type" name="type" required>
+              <option value="ordinary">Обычный</option>
+              <option value="fragile">Хрупкий</option>
+              <option value="dangerous">Опасный</option>
+              <option value="oversized">Негабаритный</option>
+            </select>
+          </div>
+          
+          <div>
+            <label for="date">
+              <span class="label-icon">📅</span>
+              Дата перевозки
+            </label>
+            <input type="date" id="date" name="date" required>
+          </div>
+          
+          <div>
+            <label for="distance">
+              <span class="label-icon">📏</span>
+              Расстояние (км)
+            </label>
+            <input type="number" id="distance" name="distance" placeholder="Укажите расстояние" min="0" step="1">
+            <small class="hint">Оставьте пустым для авторасчета</small>
+          </div>
+        </div>
+        
+        <button type="submit" class="calc-button">
+          <span>💰 Рассчитать стоимость</span>
+        </button>
+      </form>
+      
+      <!-- Результат расчета -->
+      <div id="calculationResult" class="calculation-result" style="display: none;">
+        <div class="result-header">
+          <h3>💵 Результат расчета</h3>
+        </div>
+        <div class="result-content">
+          <div class="result-item">
+            <span class="result-label">Базовая стоимость:</span>
+            <span class="result-value" id="baseCost">0 руб.</span>
+          </div>
+          <div class="result-item">
+            <span class="result-label">Надбавка за тип груза:</span>
+            <span class="result-value" id="typeCost">0 руб.</span>
+          </div>
+          <div class="result-item result-total">
+            <span class="result-label">Итого:</span>
+            <span class="result-value" id="totalCost">0 руб.</span>
+          </div>
+          <div class="result-actions">
+            <button onclick="createOrderFromCalc()" class="btn-create-order">📝 Создать заявку</button>
+            <button onclick="resetCalculator()" class="btn-reset">🔄 Новый расчет</button>
+          </div>
+        </div>
+      </div>
     </div>
-    <div>
-      <label for="weight">Вес груза</label>
-      <input type="number" id="weight" placeholder="кг">
-    </div>
-    <div>
-      <label for="type">Тип груза</label>
-      <select id="type">
-        <option>Обычный</option>
-        <option>Хрупкий</option>
-        <option>Опасный</option>
-      </select>
-    </div>
-    <div>
-      <label for="date">Дата перевозки</label>
-      <input type="text" id="date" placeholder="ДД.ММ.ГГГГ">
-    </div>
-    <div></div>
-    <button type="submit">Рассчитать</button>
-  </form>
-</main>
+  </main>
 <footer>
     <div>
       <p>📞 +375 (29) 000-00-00</p>
@@ -64,7 +149,9 @@
     </div>
   </footer>
 <script src="database.js"></script>
+<script src="auth.js"></script>
 <script src="script.js"></script>
+<script src="calculator.js"></script>
+<script src="cabinet.js"></script>
 </body>
-
 </html>

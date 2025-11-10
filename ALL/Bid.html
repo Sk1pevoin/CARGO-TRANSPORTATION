@@ -8,15 +8,31 @@
 </head>
 <body>
     <header>
-    <h1>Грузоперевозки</h1>
+    <h1><a href="Web.html" style="text-decoration: none; color: #fff;">Грузоперевозки</a></h1>
     <nav>
-      <a href="Web.html">Главная</a>
-      <a href="Calc.html">Калькулятор</a>
-      <a href="#">О нас</a>
-      <a href="services.html">Услуги</a>
-      <a href="#" class="active">Заявка</a>
-      <a href="#">Кабинет</a>
-      <a href="Contacts.html">Контакты</a>
+        <a href="Web.html">Главная</a>
+        <a href="Calc.html">Калькулятор</a>
+        <a href="About.html">О нас</a>
+        <a href="services.html">Услуги</a>
+        <a href="Bid.html">Заявка</a>
+        <a href="Contacts.html">Контакты</a>
+        
+        <!-- Ссылка для администратора (видна только админам) -->
+        <a href="admin.html" data-admin style="display: none; color: #ffeb3b;">
+            <strong>Админ-панель</strong>
+        </a>
+        
+        <!-- Для авторизованных пользователей -->
+        <span data-user style="display: none;">
+            <a href="cabinet.html">Личный кабинет</a>
+            <a href="#" onclick="authManager.logout()" style="color: #ff6b6b;">Выйти</a>
+        </span>
+        
+        <!-- Для гостей -->
+        <span data-guest style="display: none;">
+            <a href="login.html">Войти</a>
+            <a href="register.html">Регистрация</a>
+        </span>
     </nav>
 </header>
 
@@ -33,11 +49,15 @@
 
                 <div class="form-row">
                     <div>
-                        <label for="weight">Вес</label>
-                        <select id="weight" name="ves">
-                            <option>кг</option>
-                            <option>т</option>
-                        </select>
+                        <label for="weightValue">Вес груза</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="number" id="weightValue" name="weightValue" placeholder="Вес" min="0" step="0.01" required style="flex: 1;">
+                            <select id="weightUnit" name="weightUnit" style="width: 80px;">
+                                <option value="кг">кг</option>
+                                <option value="т">т</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="weight" name="ves">
                     </div>
                     <div>
                         <label for="type">Тип груза</label>
@@ -56,7 +76,7 @@
             </form>
 
             <div class="zayavka-image">
-                <img src="truck.jpg" alt="Грузовик">
+                <img src="/Photos/truck.jpg" alt="Грузовик для грузоперевозок">
             </div>
         </div>
 
@@ -76,6 +96,9 @@
     </div>
 </footer>
 <script src="database.js"></script>
+<script src="auth.js"></script>
 <script src="script.js"></script>
+<!-- Для cabinet.html добавьте -->
+<script src="cabinet.js"></script>
 </body>
 </html>

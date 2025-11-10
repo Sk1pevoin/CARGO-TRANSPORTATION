@@ -5,12 +5,21 @@ CREATE TABLE IF NOT EXISTS "bid" (
 	"wherefrom"	TEXT,
 	"towhere"	TEXT,
 	"status"	TEXT,
+	"user_id"	INTEGER,
+	"assigned_truck_id"	INTEGER,
+	"weight"	REAL,
+	"type"	TEXT,
+	"date"	TEXT,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 CREATE TABLE IF NOT EXISTS "client_auth" (
 	"id"	INTEGER,
 	"login"	TEXT NOT NULL UNIQUE,
 	"password"	TEXT NOT NULL,
+	"name"	TEXT,
+	"email"	TEXT,
+	"phone"	TEXT,
+	"created_at"	TEXT DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 CREATE TABLE IF NOT EXISTS "client_registr" (
@@ -23,6 +32,10 @@ CREATE TABLE IF NOT EXISTS "contacts" (
 	"id"	INTEGER,
 	"phone"	TEXT NOT NULL,
 	"email"	TEXT NOT NULL,
+	"name"	TEXT,
+	"subject"	TEXT,
+	"message"	TEXT,
+	"created_at"	TEXT DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 CREATE TABLE IF NOT EXISTS "drivers" (

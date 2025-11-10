@@ -6,24 +6,52 @@
   <title>Регистрация</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <div class="login-container">
-    <h2>Регистрация</h2>
-    <form id="registerForm">
-      <label for="newUsername">Логин:</label>
-      <input type="text" id="newUsername" required>
+<body class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>🚛 Грузоперевозки</h1>
+        <h2>Регистрация</h2>
+        <p>Создайте аккаунт для работы с системой</p>
+      </div>
+      
+      <form id="registerForm" class="auth-form">
+        <div class="form-group">
+          <label for="newUsername">
+            <span class="label-icon">👤</span>
+            Логин
+          </label>
+          <input type="text" id="newUsername" placeholder="Введите логин" required autocomplete="username">
+        </div>
 
-      <label for="newPassword">Пароль:</label>
-      <input type="password" id="newPassword" required>
+        <div class="form-group">
+          <label for="newPassword">
+            <span class="label-icon">🔒</span>
+            Пароль
+          </label>
+          <input type="password" id="newPassword" placeholder="Введите пароль" required autocomplete="new-password">
+        </div>
 
-      <button type="submit">Зарегистрироваться</button>
-      <p id="success-message" style="color:green; display:none; margin-top:10px;">
-        Пользователь успешно зарегистрирован!
-      </p>
-    </form>
-    <p>Уже есть аккаунт? <a href="login.html">Войти</a></p>
+        <button type="submit" class="auth-button">
+          <span>Зарегистрироваться</span>
+        </button>
+        
+        <div id="success-message" class="message success-message" style="display:none;">
+          <span class="message-icon">✓</span>
+          <span>Пользователь успешно зарегистрирован! Перенаправление...</span>
+        </div>
+      </form>
+      
+      <div class="auth-footer">
+        <p>Уже есть аккаунт? <a href="login.html" class="auth-link">Войти в систему</a></p>
+        <a href="Web.html" class="back-link">← Вернуться на главную</a>
+      </div>
+    </div>
   </div>
 <script src="database.js"></script>
+<script src="auth.js"></script>
 <script src="script.js"></script>
+<!-- Для cabinet.html добавьте -->
+<script src="cabinet.js"></script>
 </body>
 </html>

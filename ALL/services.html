@@ -9,47 +9,112 @@
 <body>
 
     <header>
-    <h1>Грузоперевозки</h1>
+    <h1><a href="Web.html" style="text-decoration: none; color: #fff;">Грузоперевозки</a></h1>
     <nav>
-      <a href="#"><a href = "Web.html">Главная</a></a>
-      <a href="#"><a href = "Calc.html">Калькулятор</a></a>
-      <a href="#">О нас</a>
-      <a href="#" class = "active">Услуги</a>
-      <a href="#"><a href = "Bid.html">Заявка</a></a>
-      <a href="#">Кабинет</a>
-      <a href="#"><a href = "Contacts.html">Контакты</a></a>
+        <a href="Web.html">Главная</a>
+        <a href="Calc.html">Калькулятор</a>
+        <a href="About.html">О нас</a>
+        <a href="services.html">Услуги</a>
+        <a href="Bid.html">Заявка</a>
+        <a href="Contacts.html">Контакты</a>
+        
+        <!-- Ссылка для администратора (видна только админам) -->
+        <a href="admin.html" data-admin style="display: none; color: #ffeb3b;">
+            <strong>Админ-панель</strong>
+        </a>
+        
+        <!-- Для авторизованных пользователей -->
+        <span data-user style="display: none;">
+            <a href="cabinet.html">Личный кабинет</a>
+            <a href="#" onclick="authManager.logout()" style="color: #ff6b6b;">Выйти</a>
+        </span>
+        
+        <!-- Для гостей -->
+        <span data-guest style="display: none;">
+            <a href="login.html">Войти</a>
+            <a href="register.html">Регистрация</a>
+        </span>
     </nav>
-  </header>
+</header>
 
 
   <main>
+    <div class="services-hero">
+      <h1>Наши услуги</h1>
+      <p>Широкий спектр услуг грузоперевозок</p>
+    </div>
+    
     <section class="services">
-      <div class="service-card">
-        <img src = "">
-        <h3>Грузоперевозки по городу</h3>
-        <p>Перевозка грузов по городу</p>
-        <button class = "order-btn" data-link = "Contacts.html">Оставить заявку</button>
+      <div class="service-card service-1">
+        <div class="service-image-wrapper">
+          <img src="/Photos/city.jpg" alt="Грузоперевозки по городу" onerror="this.src='https://via.placeholder.com/400x300/667eea/ffffff?text=🚚'">
+          <div class="service-overlay"></div>
+        </div>
+        <div class="service-content">
+          <div class="service-icon">🚚</div>
+          <h3>Грузоперевозки по городу</h3>
+          <p>Быстрая и надежная доставка грузов в пределах города. Оперативная подача транспорта.</p>
+          <ul class="service-features">
+            <li>✓ Быстрая доставка</li>
+            <li>✓ Надежная упаковка</li>
+            <li>✓ Отслеживание груза</li>
+          </ul>
+          <button class="order-btn" onclick="window.location.href='Bid.html'">📝 Оставить заявку</button>
+        </div>
       </div>
 
-      <div class="service-card">
-        <img src = "">
-        <h3>Грузоперевозки по городу</h3>
-        <p>Перевозка грузов по городу</p>
-        <button>Оставить заявку</button>
+      <div class="service-card service-2">
+        <div class="service-image-wrapper">
+          <img src="/Photos/betcity.jpg" alt="Межгородские перевозки" onerror="this.src='https://via.placeholder.com/400x300/764ba2/ffffff?text=🚛'">
+          <div class="service-overlay"></div>
+        </div>
+        <div class="service-content">
+          <div class="service-icon">🚛</div>
+          <h3>Межгородские перевозки</h3>
+          <p>Перевозка грузов между городами по всей стране. Гарантированные сроки доставки.</p>
+          <ul class="service-features">
+            <li>✓ Междугородные рейсы</li>
+            <li>✓ Гарантия сроков</li>
+            <li>✓ Страхование груза</li>
+          </ul>
+          <button onclick="window.location.href='Bid.html'">📝 Оставить заявку</button>
+        </div>
       </div>
 
-      <div class="service-card">
-        <img src = "">
-        <h3>Грузоперевозки по городу</h3>
-        <p>Перевозка грузов по городу</p>
-        <button>Оставить заявку</button>
+      <div class="service-card service-3">
+        <div class="service-image-wrapper">
+          <img src="/Photos/furniture.jpg" alt="Перевозка мебели" onerror="this.src='https://via.placeholder.com/400x300/667eea/ffffff?text=📦'">
+          <div class="service-overlay"></div>
+        </div>
+        <div class="service-content">
+          <div class="service-icon">📦</div>
+          <h3>Перевозка мебели</h3>
+          <p>Аккуратная перевозка мебели и хрупких грузов. Профессиональная упаковка и крепление.</p>
+          <ul class="service-features">
+            <li>✓ Аккуратная перевозка</li>
+            <li>✓ Профессиональная упаковка</li>
+            <li>✓ Специальная техника</li>
+          </ul>
+          <button onclick="window.location.href='Bid.html'">📝 Оставить заявку</button>
+        </div>
       </div>
 
-      <div class="service-card">
-        <img src = "">
-        <h3>Грузоперевозки по городу</h3>
-        <p>Перевозка грузов по городу</p>
-        <button>Оставить заявку</button>
+      <div class="service-card service-4">
+        <div class="service-image-wrapper">
+          <img src="/Photos/oversized.jpg" alt="Грузоперевозки негабаритных грузов" onerror="this.src='https://via.placeholder.com/400x300/764ba2/ffffff?text=🚚'">
+          <div class="service-overlay"></div>
+        </div>
+        <div class="service-content">
+          <div class="service-icon">🚚</div>
+          <h3>Негабаритные перевозки</h3>
+          <p>Специализированная техника для перевозки крупногабаритных грузов любого размера.</p>
+          <ul class="service-features">
+            <li>✓ Специальная техника</li>
+            <li>✓ Крупногабаритные грузы</li>
+            <li>✓ Опытные водители</li>
+          </ul>
+          <button onclick="window.location.href='Bid.html'">📝 Оставить заявку</button>
+        </div>
       </div>
       
     </section>
@@ -74,6 +139,9 @@
     </div>
   </footer>
 <script src="database.js"></script>
+<script src="auth.js"></script>
 <script src="script.js"></script>
+<!-- Для cabinet.html добавьте -->
+<script src="cabinet.js"></script>
 </body>
 </html>

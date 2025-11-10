@@ -10,21 +10,121 @@
   <header class="admin-header">
     <h1>Админ-панель</h1>
     <nav>
-      <a href="main.html">Главная</a>
-      <a href="users.html">Пользователи</a>
-      <a href="#"><font color = "red">Заявки</font></a>
-      <a href="settings.html">Настройки</a>
-      <a href="Web.html">Выйти</a>
+      <a href="#" onclick="showDashboard(); return false;">Дашборд</a>
+      <a href="#" onclick="showBids(); return false;"><font color = "red">Заявки</font></a>
+      <a href="#" onclick="showTransport(); return false;">Транспорт</a>
+      <a href="#" onclick="showQueue(); return false;">Очередь</a>
+      <a href="register.html">Выйти</a>
     </nav>
   </header>
-  <h1>Заявки клиентов</h1>
-    <div id="zayavkiList"></div>
+
+  <main class="admin-main">
+    <div id="dashboard" class="admin-section">
+      <div class="admin-titlebar">
+        <h2>Дашборд</h2>
+        <div class="admin-actions">
+          <input type="text" id="globalSearch" class="admin-search" placeholder="Поиск заявок, маршрутов, транспорта..." oninput="adminPanel.handleGlobalSearch(this.value)">
+          <select id="statusFilter" class="admin-select" onchange="adminPanel.applyStatusFilter(this.value)">
+            <option value="all">Все статусы</option>
+            <option value="новая">Новые</option>
+            <option value="в работе">В работе</option>
+            <option value="выполнена">Выполненные</option>
+            <option value="отменена">Отмененные</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Всего заявок</h3>
+          <p id="totalBids">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>В очереди</h3>
+          <p id="queueBids">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>В работе</h3>
+          <p id="activeBids">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Свободный транспорт</h3>
+          <p id="availableTransport">0</p>
+        </div>
+      </div>
+
+      <div class="suggestions-section">
+        <h3>Предложения по распределению</h3>
+        <div id="suggestionsList"></div>
+      </div>
+    </div>
+
+    <div id="bidsSection" class="admin-section" style="display: none;">
+      <div class="admin-titlebar">
+        <h2>Заявки клиентов</h2>
+        <div class="admin-actions">
+          <input type="text" id="bidSearch" class="admin-search" placeholder="Искать по маршруту..." oninput="adminPanel.filterBids()">
+          <select id="bidStatus" class="admin-select" onchange="adminPanel.filterBids()">
+            <option value="all">Все</option>
+            <option value="новая">Новые</option>
+            <option value="в работе">В работе</option>
+            <option value="выполнена">Выполненные</option>
+            <option value="отменена">Отмененные</option>
+          </select>
+        </div>
+      </div>
+      <div id="zayavkiList"></div>
+    </div>
+
+    <div id="transportSection" class="admin-section" style="display: none;">
+      <h2>Управление транспортом</h2>
+      <div class="transport-controls">
+        <button onclick="addTransportModal()" class="btn-primary">Добавить транспорт</button>
+      </div>
+      <div id="transportList"></div>
+      <div id="activeOrdersList"></div>
+    </div>
+
+    <div id="queueSection" class="admin-section" style="display: none;">
+      <h2>Очередь заявок</h2>
+      <div id="queueList"></div>
+    </div>
+  </main>
 
   <footer>
-    <p>© 2025 Админ-панель грузоперевозок</p>
+    <p>© 2015 Админ-панель грузоперевозок</p>
   </footer>
 
-  <script src="database.js"></script>
-<script src="admin.js"></script>
+  <div id="transportModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeTransportModal()">&times;</span>
+      <h3>Добавить транспортное средство</h3>
+      <form id="transportForm">
+        <label>Модель:</label>
+        <input type="text" id="truckModel" required>
+        
+        <label>Гос. номер:</label>
+        <input type="text" id="truckPlate" required>
+        
+        <label>Грузоподъемность (кг):</label>
+        <input type="number" id="truckCapacity" required>
+        
+        <button type="submit">Добавить</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="assignModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeAssignModal()">&times;</span>
+      <h3>Распределить заявку</h3>
+      <div id="assignContent"></div>
+    </div>
+  </div>
+<script src="database.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
+<!-- Для cabinet.html добавьте -->
+<script src="cabinet.js"></script>
 </body>
 </html>

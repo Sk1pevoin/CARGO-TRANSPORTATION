@@ -9,38 +9,85 @@
 </head>
 <body>
   <header>
-    <h1>Грузоперевозки</h1>
+    <h1><a href="Web.html" style="text-decoration: none; color: #fff;">Грузоперевозки</a></h1>
     <nav>
-      <a href="#"><a href ="Web.html" class="active">Главная</a></a>
-      <a href="#"><a href ="Calc.html" >Калькулятор</a></a>
-      <a href="#">О нас</a>
-      <a href="#"><a href = "services.html">Услуги</a></a>
-      <a href="#"><a href = "Bid.html">Заявка</a></a>
-      <a href="#">Кабинет</a>
-      <a href="#"><a href = "Contacts.html">Контакты</a></a>
+        <a href="Web.html">Главная</a>
+        <a href="Calc.html">Калькулятор</a>
+        <a href="About.html">О нас</a>
+        <a href="services.html">Услуги</a>
+        <a href="Bid.html">Заявка</a>
+        <a href="Contacts.html">Контакты</a>
+        
+        <!-- Ссылка для администратора (видна только админам) -->
+        <a href="admin.html" data-admin style="display: none; color: #ffeb3b;">
+            <strong>Админ-панель</strong>
+        </a>
+        
+        <!-- Для авторизованных пользователей -->
+        <span data-user style="display: none;">
+            <a href="cabinet.html">Личный кабинет</a>
+            <a href="#" onclick="authManager.logout()" style="color: #ff6b6b;">Выйти</a>
+        </span>
+        
+        <!-- Для гостей -->
+        <span data-guest style="display: none;">
+            <a href="login.html">Войти</a>
+            <a href="register.html">Регистрация</a>
+        </span>
     </nav>
-  </header>
+</header>
 
   <div class="hero">
-    <img src= "фон.jpg">
+    <img src= "/Photos/truck main.jpg">
   </div>
 
   <section class="section">
     <h2>Почему мы</h2>
     <div class="features">
-      <div class="feature"><h3>Безопасность</h3><p>Доставим груз в целости и сохранности</p></div>
-      <div class="feature"><h3>Скорость</h3><p>Доставим груз как можно быстрее</p></div>
-      <div class="feature"><h3>По всей территории</h3><p>Доставим груз в любую точку страны</p></div>
-      <div class="feature"><h3>Крупный автопарк</h3><p>У нас большое количество машин для разных типов грузов</p></div>
+      <div class="feature feature-1">
+        <div class="feature-icon">🛡️</div>
+        <h3>Безопасность</h3>
+        <p>Доставим груз в целости и сохранности</p>
+      </div>
+      <div class="feature feature-2">
+        <div class="feature-icon">⚡</div>
+        <h3>Скорость</h3>
+        <p>Доставим груз как можно быстрее</p>
+      </div>
+      <div class="feature feature-3">
+        <div class="feature-icon">🌍</div>
+        <h3>По всей территории</h3>
+        <p>Доставим груз в любую точку страны</p>
+      </div>
+      <div class="feature feature-4">
+        <div class="feature-icon">🚛</div>
+        <h3>Крупный автопарк</h3>
+        <p>У нас большое количество машин для разных типов грузов</p>
+      </div>
     </div>
   </section>
 
   <section class="section">
     <h2>Как это работает</h2>
     <div class="steps">
-      <div class="step"><h3>Оставьте заявку</h3><p>Мы примем заявку как можно скорее</p></div>
-      <div class="step"><h3>Загрузка</h3><p>Загружаем груз в автомобиль</p></div>
-      <div class="step"><h3>Доставка</h3><p>Доставим груз до пункта назначения</p></div>
+      <div class="step step-1">
+        <div class="step-icon">📝</div>
+        <div class="step-number">1</div>
+        <h3>Оставьте заявку</h3>
+        <p>Мы примем заявку как можно скорее</p>
+      </div>
+      <div class="step step-2">
+        <div class="step-icon">📦</div>
+        <div class="step-number">2</div>
+        <h3>Загрузка</h3>
+        <p>Загружаем груз в автомобиль</p>
+      </div>
+      <div class="step step-3">
+        <div class="step-icon">🚚</div>
+        <div class="step-number">3</div>
+        <h3>Доставка</h3>
+        <p>Доставим груз до пункта назначения</p>
+      </div>
     </div>
   </section>
 
@@ -65,6 +112,9 @@
     </div>
   </footer>
 <script src="database.js"></script>
+<script src="auth.js"></script>
 <script src="script.js"></script>
+<!-- Для cabinet.html добавьте -->
+<script src="cabinet.js"></script>
 </body>
 </html>

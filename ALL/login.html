@@ -6,23 +6,49 @@
   <title>Авторизация</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <div class="login-container">
-    <h2>Вход в систему</h2>
-    <form id="loginForm">
-      <label for="username">Логин:</label>
-      <input type="text" id="username" required>
+<body class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>🚛 Грузоперевозки</h1>
+        <h2>Вход в систему</h2>
+        <p>Войдите в свой аккаунт</p>
+      </div>
+      
+      <form id="loginForm" class="auth-form">
+        <div class="form-group">
+          <label for="username">
+            <span class="label-icon">👤</span>
+            Логин
+          </label>
+          <input type="text" id="username" placeholder="Введите логин" required autocomplete="username">
+        </div>
 
-      <label for="password">Пароль:</label>
-      <input type="password" id="password" required>
+        <div class="form-group">
+          <label for="password">
+            <span class="label-icon">🔒</span>
+            Пароль
+          </label>
+          <input type="password" id="password" placeholder="Введите пароль" required autocomplete="current-password">
+        </div>
 
-      <button type="submit">Войти</button>
-      <p id="error-message" style="color:red; display:none; margin-top:10px;">
-        Неверный логин или пароль!
-      </p>
-    </form>
+        <button type="submit" class="auth-button">
+          <span>Войти</span>
+        </button>
+        
+        <div id="error-message" class="message error-message" style="display:none;">
+          <span class="message-icon">✗</span>
+          <span>Неверный логин или пароль!</span>
+        </div>
+      </form>
+      
+      <div class="auth-footer">
+        <p>Нет аккаунта? <a href="register.html" class="auth-link">Зарегистрироваться</a></p>
+        <a href="Web.html" class="back-link">← Вернуться на главную</a>
+      </div>
+    </div>
   </div>
-
+<script src="auth.js"></script>
 <script src="database.js"></script>
 <script src="script.js"></script>
 </body>
