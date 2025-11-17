@@ -159,7 +159,7 @@ function calculateTransportCost(data) {
     const minCost = 500; // минимальная стоимость
     
     let baseCost = data.distance * baseRatePerKm;
-    let weightCost = data.distance * data.weight * weightRatePerKgKm;
+    let weightCost = data.weight * weightRatePerKgKm;
     
     // Надбавки за тип груза
     let typeMultiplier = 1;

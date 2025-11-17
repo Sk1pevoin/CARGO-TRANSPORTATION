@@ -10,15 +10,31 @@
   <header>
     <h1><a href="Web.html" style="text-decoration: none; color: #fff;">Грузоперевозки</a></h1>
     <nav>
-      <a href="Web.html">Главная</a>
-      <a href="Calc.html">Калькулятор</a>
-      <a href="#" class="active">О нас</a>
-      <a href="services.html">Услуги</a>
-      <a href="Bid.html">Заявка</a>
-      <a href="cabinet.html">Кабинет</a>
-      <a href="Contacts.html">Контакты</a>
+        <a href="Web.html">Главная</a>
+        <a href="Calc.html">Калькулятор</a>
+        <a href="About.html">О нас</a>
+        <a href="services.html">Услуги</a>
+        <a href="Bid.html">Заявка</a>
+        <a href="Contacts.html">Контакты</a>
+        
+        <!-- Ссылка для администратора (видна только админам) -->
+        <a href="admin.html" data-admin style="display: none; color: #ffeb3b;">
+            <strong>Админ-панель</strong>
+        </a>
+        
+        <!-- Для авторизованных пользователей -->
+        <span data-user style="display: none;">
+            <a href="cabinet.html">Личный кабинет</a>
+            <a href="#" onclick="authManager.logout()" style="color: #ff6b6b;">Выйти</a>
+        </span>
+        
+        <!-- Для гостей -->
+        <span data-guest style="display: none;">
+            <a href="login.html">Войти</a>
+            <a href="register.html">Регистрация</a>
+        </span>
     </nav>
-  </header>
+</header>
 
   <main>
     <section class="about-hero">
@@ -131,9 +147,5 @@
 <script src="script.js"></script>
 <script src="About.js"></script>
 <script src="cabinet.js"></script>
-</body>
-</html>
-
-  <script src="about.js"></script>
 </body>
 </html>

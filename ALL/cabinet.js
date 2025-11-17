@@ -137,7 +137,7 @@ async function loadCabinetData() {
         showError('Ошибка при загрузке данных');
     }
 }
-
+let isLoadingCabinetData = false;
 // Загрузка данных для обычного пользователя
 async function loadUserCabinetData() {
     // Загружаем заявки пользователя из IndexedDB
@@ -146,7 +146,26 @@ async function loadUserCabinetData() {
     updateStats(bids);
     
     // Загружаем историю расчетов из IndexedDB
-    await displayCalculationHistory();
+    if (isLoadingCabinetData) return;
+    isLoadingCabinetData = true;
+    
+    try {
+        console.log('Loading cabinet data...');
+        const bids = await transportDBCompat.getMyBids();
+        displayBids(bids);
+        updateStats(bids);
+        
+        await displayCalculationHistory();
+        
+        const quickActionsSection = document.querySelector('.quick-actions');
+        if (quickActionsSection) {
+            quickActionsSection.style.display = 'grid';
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки данных кабинета:', error);
+    } finally {
+        isLoadingCabinetData = false;
+    }
     
     // Показываем раздел быстрых действий
     const quickActionsSection = document.querySelector('.quick-actions');
