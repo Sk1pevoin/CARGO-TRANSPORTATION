@@ -1,0 +1,98 @@
+/* About page */
+.about-hero{
+  text-align:center;
+  padding:60px 20px 40px;
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  color:#fff;
+}
+.about-hero h1{
+  margin:0 0 10px 0;font-size:36px;font-weight:bold
+}
+.about-hero p{
+  margin:0;font-size:18px;opacity:.9
+}
+
+.about-stats{
+  max-width:1200px;margin:30px auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;padding:0 20px
+}
+.about-stats .stat{
+  background:#fff;border-radius:15px;box-shadow:0 4px 15px rgba(0,0,0,.08);text-align:center;padding:25px
+}
+.about-stats .stat-num{
+  font-size:32px;font-weight:800;color:#0a1a33
+}
+.about-stats .stat-label{
+  color:#666;margin-top:6px
+}
+
+.about-mission{
+  max-width:1200px;margin:30px auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;padding:0 20px
+}
+.about-card{
+  background:#fff;border-radius:15px;box-shadow:0 4px 15px rgba(0,0,0,.08);padding:25px
+}
+.about-card h2{
+  margin:0 0 10px 0;color:#0a1a33
+}
+.about-list{
+  margin:0;padding-left:18px;color:#666;line-height:1.8
+}
+
+.about-timeline{
+  max-width:1000px;margin:40px auto;padding:0 20px;text-align:center
+}
+.about-timeline h2{
+  margin-bottom:20px;color:#0a1a33
+}
+.timeline{
+  position:relative;margin:20px 0;padding-left:0
+}
+.timeline::before{
+  content:'';position:absolute;left:50%;top:0;bottom:0;width:3px;background:#e0e0e0;transform:translateX(-50%)
+}
+.timeline-item{
+  position:relative;max-width:46%;background:#fff;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.08);padding:15px 20px;margin:12px 0
+}
+.timeline-item span{
+  display:block;font-weight:700;color:#667eea;margin-bottom:6px
+}
+.timeline-item:nth-child(odd){
+  margin-left:0
+}
+.timeline-item:nth-child(even){
+  margin-left:auto
+}
+
+.about-team{
+  max-width:1000px;margin:40px auto;padding:0 20px;text-align:center
+}
+.about-team h2{
+  margin-bottom:20px
+}
+.team-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px
+}
+.team-card{
+  background:#fff;border-radius:15px;box-shadow:0 4px 15px rgba(0,0,0,.08);padding:25px
+}
+.team-photo{
+  width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 10px;color:#fff
+}
+
+.about-faq{
+  max-width:900px;margin:40px auto;padding:0 20px
+}
+.faq{
+  display:flex;flex-direction:column;gap:12px
+}
+.faq-item{
+  background:#fff;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.08);overflow:hidden
+}
+.faq-q{
+  width:100%;text-align:left;padding:16px 18px;border:none;background:#f9f9f9;font-weight:700;cursor:pointer
+}
+.faq-a{
+  padding:0 18px 16px 18px;color:#555;display:none
+}
+
+

@@ -30,6 +30,12 @@ document.addEventListener('DOMContentLoaded', function() {
             loadCalculatorData();
         }
 
+        // Обработка формы добавления транспорта
+        const transportForm = document.getElementById('transportForm');
+        if (transportForm) {
+            transportForm.addEventListener('submit', handleTransportSubmit);
+        }
+
         // Загрузка заявок для администратора
         if (window.location.pathname.includes('admin.html')) {
             // Проверяем права администратора
@@ -472,6 +478,8 @@ function showTransport() {
     document.getElementById('bidsSection').style.display = 'none';
     document.getElementById('transportSection').style.display = 'block';
     document.getElementById('queueSection').style.display = 'none';
+
+    loadTransportList();
 }
 
 function showQueue() {
@@ -503,16 +511,27 @@ async function loadQueueBids() {
         
         queueBids.forEach(bid => {
             html += `
-                <div class="queue-card" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background: white;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div>
-                            <strong>#${bid.id} ${bid.wherefrom} → ${bid.towhere}</strong>
-                            <p style="margin: 5px 0; color: #666;">Вес: ${bid.weight || '0'} кг</p>
-                            <p style="margin: 5px 0; color: #666;">Тип: ${bid.type || 'Обычный'}</p>
-                            <p style="margin: 5px 0; color: #666;">Дата: ${bid.date || 'Не указана'}</p>
-                        </div>
-                        <button onclick="updateBidStatus(${bid.id}, 'в работе')" 
-                                style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                <div class="queue-card">
+                    <div class="queue-card-header">
+                        <h4>#${bid.id} ${bid.wherefrom} → ${bid.towhere}</h4>
+                        <span class="queue-badge">Новая заявка</span>
+                    </div>
+                    
+                    <div class="queue-row">
+                        <span class="queue-label">Вес</span>
+                        <span class="queue-value">${bid.weight || '0'} кг</span>
+                    </div>
+                    <div class="queue-row">
+                        <span class="queue-label">Тип груза</span>
+                        <span class="queue-value">${bid.type || 'Обычный'}</span>
+                    </div>
+                    <div class="queue-row">
+                        <span class="queue-label">Дата</span>
+                        <span class="queue-value">${bid.date || 'Не указана'}</span>
+                    </div>
+                    
+                    <div class="queue-assign">
+                        <button class="btn-assign" onclick="updateBidStatus(${bid.id}, 'в работе')">
                             Взять в работу
                         </button>
                     </div>
@@ -527,6 +546,96 @@ async function loadQueueBids() {
         console.error('Ошибка при загрузке очереди:', error);
     }
 }
+
+// ================== ДОБАВЛЕНИЕ ТРАНСПОРТА ==================
+function addTransportModal() {
+    const modal = document.getElementById('transportModal');
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+function closeTransportModal() {
+    const modal = document.getElementById('transportModal');
+    const form = document.getElementById('transportForm');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    if (form) {
+        form.reset();
+    }
+}
+
+async function handleTransportSubmit(event) {
+    event.preventDefault();
+
+    const modelInput = document.getElementById('truckModel');
+    const plateInput = document.getElementById('truckPlate');
+    const capacityInput = document.getElementById('truckCapacity');
+
+    const truckData = {
+        model: modelInput?.value?.trim(),
+        license_plate: plateInput?.value?.trim(),
+        capacity_kg: capacityInput?.value
+    };
+
+    if (!truckData.model || !truckData.license_plate || !truckData.capacity_kg) {
+        showError('Заполните все поля транспорта');
+        return;
+    }
+
+    try {
+        await transportDBCompat.addTruck(truckData);
+        showSuccess('Транспорт успешно добавлен');
+        closeTransportModal();
+        loadTransportList();
+        loadAdminStats?.();
+    } catch (error) {
+        console.error('Ошибка при добавлении транспорта:', error);
+        showError('Ошибка при добавлении транспорта: ' + (error.message || 'попробуйте позже'));
+    }
+}
+
+async function loadTransportList() {
+    const container = document.getElementById('transportList');
+    if (!container) return;
+
+    try {
+        const trucks = await transportDBCompat.getAllTrucks();
+        if (!trucks || trucks.length === 0) {
+            container.innerHTML = '<p style="text-align:center; padding:20px; color:#666;">Транспорт еще не добавлен</p>';
+            return;
+        }
+
+        const cards = trucks.map(renderTransportCard).join('');
+        container.innerHTML = `<div class="transport-grid">${cards}</div>`;
+    } catch (error) {
+        console.error('Ошибка при загрузке транспорта:', error);
+        container.innerHTML = '<p style="text-align:center; padding:20px; color:#dc3545;">Не удалось загрузить транспорт</p>';
+    }
+}
+
+function renderTransportCard(truck) {
+    const statusClass = truck.status === 'available' ? 'status-badge available' : 'status-badge busy';
+    const statusLabel = truck.status === 'available' ? 'Свободен' : 'Занят';
+
+    return `
+        <div class="transport-card ${truck.status || 'available'}">
+            <h4>#${truck.id || ''} ${truck.model || 'Без названия'}</h4>
+            <p>Гос. номер: <strong>${truck.license_plate || '—'}</strong></p>
+            <p>Грузоподъемность: <strong>${truck.capacity_kg || 0} кг</strong></p>
+            <span class="${statusClass}">${statusLabel}</span>
+        </div>
+    `;
+}
+
+// Закрытие модального окна при клике вне его
+window.addEventListener('click', (event) => {
+    const modal = document.getElementById('transportModal');
+    if (modal && event.target === modal) {
+        closeTransportModal();
+    }
+});
 
 // Глобальный обработчик ошибок
 window.addEventListener('error', function(e) {
