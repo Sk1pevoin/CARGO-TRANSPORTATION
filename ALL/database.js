@@ -158,6 +158,26 @@ class IndexedDBManager {
         return this.updateItem('bids', bidId, { status: newStatus });
     }
 
+    async assignTruckToBid(bidId, truckId) {
+        // Обновляем заявку с назначенным транспортом
+        const bid = await this.getItem('bids', bidId);
+        if (!bid) {
+            throw new Error('Заявка не найдена');
+        }
+        
+        // Обновляем статус транспорта на "занят"
+        const truck = await this.getItem('trucks', truckId);
+        if (truck) {
+            await this.updateItem('trucks', truckId, { status: 'busy' });
+        }
+        
+        // Обновляем заявку
+        return this.updateItem('bids', bidId, { 
+            assigned_truck_id: truckId,
+            status: 'в работе'
+        });
+    }
+
     // 🚛 МЕТОДЫ ДЛЯ РАБОТЫ С ТРАНСПОРТОМ
     async createTruck(truckData) {
         const truck = {
@@ -176,8 +196,32 @@ class IndexedDBManager {
     }
 
     async getAvailableTrucks() {
-        const trucks = await this.getAll('trucks');
-        return trucks.filter(truck => truck.status === 'available');
+        // Сначала проверяем localStorage (основной источник для транспорта)
+        try {
+            const trucksFromLS = JSON.parse(localStorage.getItem('trucks') || '[]');
+            if (trucksFromLS && trucksFromLS.length > 0) {
+                const available = trucksFromLS.filter(truck => truck.status === 'available');
+                console.log('🚛 Транспорт из localStorage:', trucksFromLS.length, 'всего,', available.length, 'доступно');
+                return available;
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке транспорта из localStorage:', error);
+        }
+        
+        // Fallback на IndexedDB
+        try {
+            const trucks = await this.getAll('trucks');
+            if (trucks && trucks.length > 0) {
+                const available = trucks.filter(truck => truck.status === 'available');
+                console.log('🚛 Транспорт из IndexedDB:', trucks.length, 'всего,', available.length, 'доступно');
+                return available;
+            }
+        } catch (error) {
+            console.log('Не удалось загрузить транспорт из IndexedDB:', error);
+        }
+        
+        console.log('⚠️ Транспорт не найден ни в localStorage, ни в IndexedDB');
+        return [];
     }
 
     async deleteTruck(truckId) {
@@ -559,18 +603,57 @@ class TransportDatabase {
 
     async getSuggestions() {
         try {
-            const newBids = await transportDB.getBids().then(bids => 
-                bids.filter(b => b.status === 'новая')
-            );
+            console.log('🔍 Поиск предложений...');
+            const allBids = await transportDB.getBids();
+            console.log('📝 Всего заявок:', allBids.length);
+            
+            const newBids = allBids.filter(b => b.status === 'новая');
+            console.log('🆕 Новых заявок:', newBids.length);
+            
+            if (newBids.length === 0) {
+                console.log('ℹ️ Нет новых заявок');
+                return [];
+            }
             
             const availableTrucks = await transportDB.getAvailableTrucks();
+            console.log('🚛 Доступно транспорта:', availableTrucks.length);
             
-            return newBids.map(bid => ({
-                bid: bid,
-                trucks: availableTrucks.filter(truck => 
-                    !bid.weight || truck.capacity_kg >= bid.weight
-                )
-            }));
+            if (availableTrucks.length === 0) {
+                console.log('⚠️ Нет свободного транспорта, но показываем заявки');
+                // Нет свободного транспорта, но показываем заявки с предупреждением
+                return newBids.map(bid => ({
+                    bid: bid,
+                    trucks: [],
+                    canDistribute: false,
+                    needsMultiple: false
+                }));
+            }
+            
+            return newBids.map(bid => {
+                const bidWeight = parseFloat(bid.weight) || 0;
+                
+                // Проверяем, можно ли перевезти одним транспортом
+                const suitableSingleTrucks = availableTrucks.filter(truck => {
+                    const capacity = parseFloat(truck.capacity_kg) || 0;
+                    return capacity >= bidWeight;
+                });
+                
+                // Проверяем, можно ли распределить между несколькими
+                const totalCapacity = availableTrucks.reduce((sum, truck) => {
+                    return sum + (parseFloat(truck.capacity_kg) || 0);
+                }, 0);
+                
+                const canDistribute = totalCapacity >= bidWeight;
+                const needsMultiple = bidWeight > 0 && suitableSingleTrucks.length === 0 && canDistribute;
+                
+                return {
+                    bid: bid,
+                    trucks: suitableSingleTrucks.length > 0 ? suitableSingleTrucks : availableTrucks,
+                    canDistribute: canDistribute,
+                    needsMultiple: needsMultiple,
+                    totalCapacity: totalCapacity
+                };
+            });
         } catch (error) {
             console.error('Ошибка при получении предложений:', error);
             return [];

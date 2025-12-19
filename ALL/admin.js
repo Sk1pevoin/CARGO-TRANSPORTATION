@@ -53,12 +53,19 @@ class AdminPanel {
 
     async loadSuggestions() {
         try {
-            const suggestions = await transportDB.getSuggestions();
+            console.log('🔄 Загрузка предложений...');
+            const suggestions = await transportDBCompat.getSuggestions();
+            console.log('📋 Получено предложений:', suggestions);
+            
             const container = document.getElementById('suggestionsList');
-            if (!container) return;
+            if (!container) {
+                console.error('❌ Контейнер suggestionsList не найден');
+                return;
+            }
 
             if (!suggestions || suggestions.length === 0) {
-                container.innerHTML = '<p class="muted">Нет предложений</p>';
+                container.innerHTML = '<p class="muted">Нет новых заявок для распределения</p>';
+                console.log('ℹ️ Нет предложений для отображения');
                 return;
             }
 
@@ -66,39 +73,71 @@ class AdminPanel {
             suggestions.forEach(item => {
                 const bid = item.bid;
                 const trucks = item.trucks || [];
+                const bidWeight = parseFloat(bid.weight) || 0;
+                
+                let statusBadge = '';
+                let canDistribute = item.canDistribute !== false;
+                
+                if (trucks.length === 0) {
+                    statusBadge = '<span style="background: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Нет свободного транспорта</span>';
+                    canDistribute = false;
+                } else if (item.needsMultiple) {
+                    statusBadge = '<span style="background: #ffc107; color: #000; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Требуется разделение груза</span>';
+                } else {
+                    statusBadge = `<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${trucks.length} ТС доступно</span>`;
+                }
+                
                 html += `
-                    <div style="border:1px solid #e5e7eb; border-radius:10px; padding:12px; margin-bottom:10px; background:#fff; display:flex; align-items:center; justify-content:space-between; gap:12px;">
-                        <div>
-                            <div><strong>#${bid.id}</strong> • ${bid.wherefrom} → ${bid.towhere}</div>
-                            <div class="muted">Вес: ${bid.weight ? bid.weight + ' кг' : 'нет данных'}</div>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <span class="muted">Подходит: ${trucks.length}</span>
-                            <button class="btn-primary" onclick="adminPanel.openAssignModal(${bid.id})">Распределить</button>
+                    <div style="border:1px solid #e5e7eb; border-radius:10px; padding:15px; margin-bottom:12px; background:#fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:15px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <div style="margin-bottom: 8px;">
+                                    <strong style="font-size: 16px;">#${bid.id}</strong> • 
+                                    <strong>${bid.wherefrom}</strong> → <strong>${bid.towhere}</strong>
+                                </div>
+                                <div style="color: #666; font-size: 14px; margin-bottom: 4px;">
+                                    Вес: <strong>${bidWeight > 0 ? bidWeight + ' кг' : 'не указан'}</strong>
+                                </div>
+                                <div style="color: #666; font-size: 14px;">
+                                    Тип: ${bid.type || 'Обычный'} • Дата: ${bid.date || 'не указана'}
+                                </div>
+                            </div>
+                            <div style="display:flex; flex-direction: column; align-items:flex-end; gap:10px;">
+                                ${statusBadge}
+                                ${canDistribute ? 
+                                    `<button class="btn-primary" onclick="if(window.adminPanel) adminPanel.openAssignModal(${bid.id})" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Распределить</button>` :
+                                    `<button disabled style="padding: 8px 16px; background: #ccc; color: #666; border: none; border-radius: 6px; cursor: not-allowed; font-weight: 500;">Нет транспорта</button>`
+                                }
+                            </div>
                         </div>
                     </div>
                 `;
             });
             container.innerHTML = html;
         } catch (e) {
+            console.error('Ошибка при загрузке предложений:', e);
             const container = document.getElementById('suggestionsList');
-            if (container) container.innerHTML = '<p class="muted">Ошибка загрузки предложений</p>';
+            if (container) container.innerHTML = '<p class="muted" style="color: #dc3545;">Ошибка загрузки предложений: ' + e.message + '</p>';
         }
     }
 
     async loadBids() {
-        const bids = await transportDB.getAllBids();
+        const bids = await transportDB.getBids();
         this.bidsCache = bids;
         this.applyBidFilters();
     }
 
-    displayBids(bids) {
+    async displayBids(bids) {
         const bidsList = document.getElementById('zayavkiList');
         
         if (bids.length === 0) {
             bidsList.innerHTML = '<p>Нет заявок</p>';
             return;
         }
+
+        // Загружаем информацию о распределениях
+        const assignments = JSON.parse(localStorage.getItem('cargo_assignments') || '[]');
+        const trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
 
         let html = `
             <div class="table-wrap">
@@ -107,6 +146,7 @@ class AdminPanel {
                         <tr>
                             <th>ID</th>
                             <th>Маршрут</th>
+                            <th>Вес</th>
                             <th>Дата создания</th>
                             <th>Статус</th>
                             <th>Транспорт</th>
@@ -116,29 +156,55 @@ class AdminPanel {
                     <tbody>
         `;
 
-        bids.forEach(bid => {
+        for (const bid of bids) {
             const statusColor = this.getStatusColor(bid.status);
+            
+            // Получаем информацию о распределении для этой заявки
+            const assignment = assignments.find(a => a.bidId === bid.id);
+            let transportInfo = '<span class="muted">не назначен</span>';
+            
+            if (assignment && assignment.trucks && assignment.trucks.length > 0) {
+                // Груз распределен между несколькими транспортными средствами
+                const truckDetails = assignment.trucks.map(ta => {
+                    const truck = trucks.find(t => t.id === ta.truckId);
+                    const truckLabel = truck ? `#${truck.id} (${truck.model})` : `#${ta.truckId}`;
+                    return `${truckLabel}: ${ta.assignedWeight} кг`;
+                }).join('<br>');
+                
+                transportInfo = `
+                    <div style="font-size: 12px;">
+                        <strong style="color: #28a745;">${assignment.trucks.length} ТС:</strong><br>
+                        ${truckDetails}
+                    </div>
+                `;
+            } else if (bid.assigned_truck_id) {
+                // Один транспорт (старый формат)
+                const truck = trucks.find(t => t.id === bid.assigned_truck_id);
+                transportInfo = truck ? `#${truck.id} (${truck.model})` : `#${bid.assigned_truck_id}`;
+            }
+            
             html += `
                 <tr>
                     <td>${bid.id}</td>
                     <td><strong>${bid.wherefrom}</strong> → <strong>${bid.towhere}</strong></td>
-                    <td>${bid.date}</td>
+                    <td>${bid.weight || 0} кг</td>
+                    <td>${bid.date || bid.created_at ? (bid.date || bid.created_at.split('T')[0]) : '—'}</td>
                     <td><span class="badge ${statusColor.cls}">${bid.status}</span></td>
-                    <td>${bid.assigned_truck_id ? `#${bid.assigned_truck_id}` : '<span class="muted">не назначен</span>'}</td>
+                    <td>${transportInfo}</td>
                     <td>
                         <div style="display:flex; gap:8px; align-items:center;">
-                            <select onchange="adminPanel.updateBidStatus(${bid.id}, this.value)" class="btn-secondary">
+                            <select id="statusSelect_${bid.id}" onchange="if(window.adminPanel) adminPanel.updateBidStatus(${bid.id}, this.value)" class="btn-secondary">
                                 <option value="новая" ${bid.status === 'новая' ? 'selected' : ''}>Новая</option>
                                 <option value="в работе" ${bid.status === 'в работе' ? 'selected' : ''}>В работе</option>
                                 <option value="выполнена" ${bid.status === 'выполнена' ? 'selected' : ''}>Выполнена</option>
                                 <option value="отменена" ${bid.status === 'отменена' ? 'selected' : ''}>Отменена</option>
                             </select>
-                            <button class="btn-primary" onclick="adminPanel.openAssignModal(${bid.id})">Распределить</button>
+                            <button class="btn-primary" onclick="if(window.adminPanel) adminPanel.openAssignModal(${bid.id})">Распределить</button>
                         </div>
                     </td>
                 </tr>
             `;
-        });
+        }
 
         html += '</tbody></table></div>';
         bidsList.innerHTML = html;
@@ -161,10 +227,108 @@ class AdminPanel {
 
     async updateBidStatus(bidId, newStatus) {
         try {
+            console.log('🔄 Обновление статуса заявки', bidId, 'на', newStatus);
+            
+            // Если пытаемся взять заявку в работу, проверяем наличие транспорта
+            if (newStatus === 'в работе') {
+                const bid = await transportDB.getBidById(bidId);
+                if (!bid) {
+                    alert('Заявка не найдена');
+                    return;
+                }
+                
+                console.log('📋 Заявка:', bid);
+                
+                // Проверяем, назначен ли уже транспорт
+                const assignments = JSON.parse(localStorage.getItem('cargo_assignments') || '[]');
+                const assignment = assignments.find(a => a.bidId === bidId);
+                
+                console.log('🚛 Назначения:', assignment, 'assigned_truck_id:', bid.assigned_truck_id);
+                
+                if (!assignment && !bid.assigned_truck_id) {
+                    // Транспорт не назначен, проверяем наличие свободного транспорта
+                    const availableTrucks = await transportDB.getAvailableTrucks();
+                    console.log('🚛 Доступно транспорта:', availableTrucks.length);
+                    
+                    if (availableTrucks.length === 0) {
+                        alert('⚠️ Невозможно взять заявку в работу: нет свободного транспорта!\n\nПожалуйста, сначала распределите груз на транспортные средства.');
+                        // Сбрасываем выбор обратно
+                        setTimeout(() => {
+                            const select = document.getElementById(`statusSelect_${bidId}`);
+                            if (select) {
+                                select.value = bid.status;
+                            }
+                        }, 100);
+                        return;
+                    }
+                    
+                    // Проверяем, можно ли перевезти груз имеющимся транспортом
+                    const bidWeight = parseFloat(bid.weight) || 0;
+                    if (bidWeight > 0) {
+                        const maxCapacity = Math.max(...availableTrucks.map(t => parseFloat(t.capacity_kg) || 0));
+                        const totalCapacity = availableTrucks.reduce((sum, t) => sum + (parseFloat(t.capacity_kg) || 0), 0);
+                        
+                        console.log('⚖️ Вес груза:', bidWeight, 'Макс. грузоподъемность:', maxCapacity, 'Общая:', totalCapacity);
+                        
+                        if (bidWeight > maxCapacity && bidWeight > totalCapacity) {
+                            alert('⚠️ Невозможно взять заявку в работу: недостаточно грузоподъемности транспорта!\n\nВес груза: ' + bidWeight + ' кг\nМаксимальная грузоподъемность одного ТС: ' + maxCapacity + ' кг\nОбщая грузоподъемность: ' + totalCapacity + ' кг\n\nПожалуйста, сначала распределите груз на транспортные средства.');
+                            // Сбрасываем выбор обратно
+                            setTimeout(() => {
+                                const select = document.getElementById(`statusSelect_${bidId}`);
+                                if (select) {
+                                    select.value = bid.status;
+                                }
+                            }, 100);
+                            return;
+                        }
+                        
+                        // Если груз слишком большой для одного ТС, предлагаем распределение
+                        if (bidWeight > maxCapacity) {
+                            const confirmDistribute = confirm(
+                                '⚠️ Груз слишком большой для одного транспортного средства!\n\n' +
+                                'Вес груза: ' + bidWeight + ' кг\n' +
+                                'Максимальная грузоподъемность одного ТС: ' + maxCapacity + ' кг\n\n' +
+                                'Необходимо распределить груз между несколькими транспортными средствами.\n\n' +
+                                'Открыть окно распределения?'
+                            );
+                            
+                            if (confirmDistribute) {
+                                // Сбрасываем выбор обратно
+                                setTimeout(() => {
+                                    const select = document.getElementById(`statusSelect_${bidId}`);
+                                    if (select) {
+                                        select.value = bid.status;
+                                    }
+                                }, 100);
+                                // Открываем модальное окно распределения
+                                this.openAssignModal(bidId);
+                                return;
+                            } else {
+                                // Сбрасываем выбор обратно
+                                setTimeout(() => {
+                                    const select = document.getElementById(`statusSelect_${bidId}`);
+                                    if (select) {
+                                        select.value = bid.status;
+                                    }
+                                }, 100);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Обновляем статус
             await transportDB.updateBidStatus(bidId, newStatus);
             this.loadBids();
             this.loadStats();
+            this.loadSuggestions();
+            
+            if (newStatus === 'в работе') {
+                showSuccess('Заявка взята в работу');
+            }
         } catch (error) {
+            console.error('Ошибка при обновлении статуса:', error);
             alert('Ошибка при обновлении статуса: ' + error.message);
         }
     }
@@ -197,10 +361,24 @@ class AdminPanel {
 
     async loadTransport() {
         try {
-            const trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
+            // Сначала пытаемся загрузить из IndexedDB
+            let trucks = [];
+            try {
+                trucks = await transportDB.getAllTrucks();
+                if (!trucks || trucks.length === 0) {
+                    throw new Error('Нет транспорта в IndexedDB');
+                }
+            } catch (error) {
+                console.log('Загрузка транспорта из localStorage');
+                // Fallback на localStorage
+                trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
+            }
+            
+            console.log('🚛 Загружено транспорта:', trucks.length);
             this.displayTransport(trucks);
         } catch (error) {
             console.error('Ошибка при загрузке транспорта:', error);
+            this.displayTransport([]);
         }
     }
 
@@ -245,7 +423,7 @@ class AdminPanel {
                         </span>
                     </td>
                     <td style="padding: 12px; border: 1px solid #ddd;">
-                        <button onclick="adminPanel.deleteTruck(${truck.id})" 
+                        <button onclick="if(window.adminPanel) adminPanel.deleteTruck(${truck.id})" 
                                 style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
                             Удалить
                         </button>
@@ -317,6 +495,31 @@ class AdminPanel {
         this.displayBids(list);
     }
 
+    filterBids() {
+        const statusSelect = document.getElementById('bidStatus');
+        const searchInput = document.getElementById('bidSearch');
+        
+        if (statusSelect) {
+            this.filters.status = statusSelect.value;
+        }
+        
+        if (searchInput) {
+            this.filters.search = searchInput.value.trim().toLowerCase();
+        }
+        
+        this.applyBidFilters();
+    }
+
+    applyStatusFilter(status) {
+        this.filters.status = status;
+        this.applyBidFilters();
+    }
+
+    handleGlobalSearch(value) {
+        this.filters.search = value.trim().toLowerCase();
+        this.applyBidFilters();
+    }
+
     refreshBids() {
         this.loadBids();
     }
@@ -358,30 +561,138 @@ class AdminPanel {
                 return;
             }
 
-            let html = '<label>Выберите транспорт:</label><select id="assignTruckSelect" style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:8px; margin-top:6px;">';
-            available.forEach(t => {
-                const insufficient = bid && bid.weight && t.capacity_kg && Number(t.capacity_kg) < Number(bid.weight);
-                const label = `#${t.id} • ${t.model} • ${t.license_plate} • ${t.capacity_kg || ''} кг`;
-                html += `<option value="${t.id}" ${insufficient ? 'disabled' : ''} title="${insufficient ? 'Недостаточная грузоподъёмность' : ''}">${label}${insufficient ? ' (недостаточно)' : ''}</option>`;
-            });
-            html += '</select>';
+            const bidWeight = bid && bid.weight ? parseFloat(bid.weight) : 0;
+            
+            // Проверяем, нужен ли раздел груза
+            const maxCapacity = Math.max(...available.map(t => parseFloat(t.capacity_kg) || 0));
+            const needsSplit = bidWeight > maxCapacity;
+            
+            let html = '';
+            
+            if (needsSplit) {
+                // Режим разделения груза между несколькими транспортными средствами
+                html += `
+                    <div style="margin-bottom: 15px; padding: 10px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                        <strong>⚠️ Груз слишком большой для одного транспортного средства</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 14px;">
+                            Вес груза: <strong>${bidWeight} кг</strong><br>
+                            Максимальная грузоподъемность одного ТС: <strong>${maxCapacity} кг</strong>
+                        </p>
+                        <p style="margin: 5px 0 0 0; font-size: 14px; color: #856404;">
+                            Выберите несколько транспортных средств для распределения груза
+                        </p>
+                    </div>
+                `;
+                
+                // Автоматический расчет распределения
+                const distribution = this.calculateCargoDistribution(bidWeight, available);
+                
+                html += '<label style="display: block; margin-top: 15px; margin-bottom: 8px; font-weight: bold;">Распределение груза:</label>';
+                html += '<div id="cargoDistribution" style="margin-bottom: 15px;">';
+                
+                distribution.forEach((item, index) => {
+                    html += `
+                        <div style="display: flex; align-items: center; gap: 10px; padding: 10px; margin-bottom: 8px; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;">
+                            <input type="checkbox" id="truck_${item.truck.id}" value="${item.truck.id}" 
+                                   checked style="width: 20px; height: 20px; cursor: pointer;">
+                            <label for="truck_${item.truck.id}" style="flex: 1; cursor: pointer; margin: 0;">
+                                <strong>#${item.truck.id}</strong> • ${item.truck.model} • ${item.truck.license_plate}<br>
+                                <span style="font-size: 12px; color: #666;">
+                                    Грузоподъемность: ${item.truck.capacity_kg} кг → 
+                                    <strong style="color: #28a745;">Назначено: ${item.assignedWeight} кг</strong>
+                                </span>
+                            </label>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                
+                html += `
+                    <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 8px;">
+                        <strong>Итого:</strong>
+                        <div id="distributionSummary" style="margin-top: 5px; font-size: 14px;"></div>
+                    </div>
+                `;
+                
+                // Добавляем обработчик для пересчета при изменении выбора
+                setTimeout(() => {
+                    distribution.forEach(item => {
+                        const checkbox = document.getElementById(`truck_${item.truck.id}`);
+                        if (checkbox) {
+                            checkbox.addEventListener('change', () => this.updateDistributionSummary(bidWeight, available));
+                        }
+                    });
+                    this.updateDistributionSummary(bidWeight, available);
+                }, 100);
+                
+            } else {
+                // Обычный режим - один транспорт
+                html += '<label>Выберите транспорт:</label>';
+                html += '<select id="assignTruckSelect" style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:8px; margin-top:6px;">';
+                available.forEach(t => {
+                    const insufficient = bidWeight > 0 && t.capacity_kg && Number(t.capacity_kg) < bidWeight;
+                    const label = `#${t.id} • ${t.model} • ${t.license_plate} • ${t.capacity_kg || ''} кг`;
+                    html += `<option value="${t.id}" ${insufficient ? 'disabled' : ''} title="${insufficient ? 'Недостаточная грузоподъёмность' : ''}">${label}${insufficient ? ' (недостаточно)' : ''}</option>`;
+                });
+                html += '</select>';
+            }
+            
             content.innerHTML = html;
 
             document.getElementById('assignSubmitBtn').onclick = async () => {
-                const select = document.getElementById('assignTruckSelect');
-                const truckId = parseInt(select.value, 10);
-                const chosen = available.find(t => t.id === truckId);
-                if (bid && bid.weight && chosen && chosen.capacity_kg && Number(chosen.capacity_kg) < Number(bid.weight)) {
-                    alert('Нельзя назначить: вес груза превышает грузоподъёмность транспорта');
-                    return;
-                }
-                try {
-                    await transportDB.assignTruckToBid(bidId, truckId);
-                    this.refreshBids();
-                    this.loadSuggestions();
-                    closeAssignModal();
-                } catch (e) {
-                    alert('Ошибка: ' + (e.message || 'не удалось назначить транспорт'));
+                if (needsSplit) {
+                    // Режим разделения
+                    const selectedTrucks = [];
+                    distribution.forEach(item => {
+                        const checkbox = document.getElementById(`truck_${item.truck.id}`);
+                        if (checkbox && checkbox.checked) {
+                            selectedTrucks.push({
+                                truckId: item.truck.id,
+                                assignedWeight: item.assignedWeight
+                            });
+                        }
+                    });
+                    
+                    if (selectedTrucks.length === 0) {
+                        alert('Выберите хотя бы одно транспортное средство');
+                        return;
+                    }
+                    
+                    const totalAssigned = selectedTrucks.reduce((sum, item) => sum + item.assignedWeight, 0);
+                    if (totalAssigned < bidWeight * 0.99) { // Допускаем небольшую погрешность
+                        if (!confirm(`Внимание! Распределено только ${totalAssigned.toFixed(2)} кг из ${bidWeight} кг. Продолжить?`)) {
+                            return;
+                        }
+                    }
+                    
+                    try {
+                        await this.assignMultipleTrucksToBid(bidId, selectedTrucks);
+                        this.loadBids();
+                        this.loadSuggestions();
+                        closeAssignModal();
+                        showSuccess('Груз успешно распределен между транспортными средствами');
+                    } catch (e) {
+                        alert('Ошибка: ' + (e.message || 'не удалось назначить транспорт'));
+                    }
+                } else {
+                    // Обычный режим
+                    const select = document.getElementById('assignTruckSelect');
+                    const truckId = parseInt(select.value, 10);
+                    const chosen = available.find(t => t.id === truckId);
+                    if (bidWeight > 0 && chosen && chosen.capacity_kg && Number(chosen.capacity_kg) < bidWeight) {
+                        alert('Нельзя назначить: вес груза превышает грузоподъёмность транспорта');
+                        return;
+                    }
+                    try {
+                        await transportDB.assignTruckToBid(bidId, truckId);
+                        this.loadBids();
+                        this.loadSuggestions();
+                        closeAssignModal();
+                        showSuccess('Транспорт успешно назначен на заявку');
+                    } catch (e) {
+                        alert('Ошибка: ' + (e.message || 'не удалось назначить транспорт'));
+                    }
                 }
             };
         } catch (error) {
@@ -389,12 +700,151 @@ class AdminPanel {
         }
     }
 
+    // Расчет распределения груза между транспортными средствами
+    calculateCargoDistribution(totalWeight, availableTrucks) {
+        // Сортируем транспорт по грузоподъемности (от большего к меньшему)
+        const sortedTrucks = [...availableTrucks].sort((a, b) => 
+            (parseFloat(b.capacity_kg) || 0) - (parseFloat(a.capacity_kg) || 0)
+        );
+        
+        const distribution = [];
+        let remainingWeight = totalWeight;
+        
+        for (const truck of sortedTrucks) {
+            if (remainingWeight <= 0) break;
+            
+            const capacity = parseFloat(truck.capacity_kg) || 0;
+            const assignedWeight = Math.min(remainingWeight, capacity);
+            
+            distribution.push({
+                truck: truck,
+                assignedWeight: Math.round(assignedWeight * 100) / 100 // Округляем до 2 знаков
+            });
+            
+            remainingWeight -= assignedWeight;
+        }
+        
+        // Если груз не поместился, добавляем оставшийся вес к последнему транспорту
+        if (remainingWeight > 0 && distribution.length > 0) {
+            distribution[distribution.length - 1].assignedWeight += remainingWeight;
+            distribution[distribution.length - 1].assignedWeight = Math.round(distribution[distribution.length - 1].assignedWeight * 100) / 100;
+        }
+        
+        return distribution;
+    }
+
+    // Обновление сводки распределения
+    updateDistributionSummary(totalWeight, availableTrucks) {
+        const summaryDiv = document.getElementById('distributionSummary');
+        if (!summaryDiv) return;
+        
+        const selectedTrucks = [];
+        availableTrucks.forEach(truck => {
+            const checkbox = document.getElementById(`truck_${truck.id}`);
+            if (checkbox && checkbox.checked) {
+                selectedTrucks.push(truck);
+            }
+        });
+        
+        if (selectedTrucks.length === 0) {
+            summaryDiv.innerHTML = '<span style="color: #dc3545;">Не выбрано ни одного транспортного средства</span>';
+            return;
+        }
+        
+        const distribution = this.calculateCargoDistribution(totalWeight, selectedTrucks);
+        const totalAssigned = distribution.reduce((sum, item) => sum + item.assignedWeight, 0);
+        const coverage = ((totalAssigned / totalWeight) * 100).toFixed(1);
+        
+        let summaryHtml = `
+            <div>Выбрано ТС: <strong>${selectedTrucks.length}</strong></div>
+            <div>Распределено: <strong>${totalAssigned.toFixed(2)} кг</strong> из ${totalWeight} кг (${coverage}%)</div>
+        `;
+        
+        if (totalAssigned < totalWeight * 0.99) {
+            summaryHtml += `<div style="color: #dc3545; margin-top: 5px;">⚠️ Не весь груз распределен! Осталось: ${(totalWeight - totalAssigned).toFixed(2)} кг</div>`;
+        } else {
+            summaryHtml += `<div style="color: #28a745; margin-top: 5px;">✅ Весь груз распределен</div>`;
+        }
+        
+        summaryDiv.innerHTML = summaryHtml;
+    }
+
+    // Назначение нескольких транспортных средств на заявку
+    async assignMultipleTrucksToBid(bidId, truckAssignments) {
+        try {
+            // Сохраняем информацию о распределении в заявку
+            const bid = await transportDB.getBidById(bidId);
+            if (!bid) {
+                throw new Error('Заявка не найдена');
+            }
+            
+            // Сохраняем распределение в localStorage (можно также в IndexedDB)
+            const assignments = {
+                bidId: bidId,
+                trucks: truckAssignments,
+                totalWeight: bid.weight,
+                assignedAt: new Date().toISOString()
+            };
+            
+            // Получаем существующие распределения
+            const allAssignments = JSON.parse(localStorage.getItem('cargo_assignments') || '[]');
+            
+            // Удаляем старое распределение для этой заявки, если есть
+            const filteredAssignments = allAssignments.filter(a => a.bidId !== bidId);
+            filteredAssignments.push(assignments);
+            
+            localStorage.setItem('cargo_assignments', JSON.stringify(filteredAssignments));
+            
+            // Обновляем статус транспорта на "занят"
+            const trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
+            truckAssignments.forEach(assignment => {
+                const truck = trucks.find(t => t.id === assignment.truckId);
+                if (truck) {
+                    truck.status = 'busy';
+                }
+            });
+            localStorage.setItem('trucks', JSON.stringify(trucks));
+            
+            // Обновляем заявку - сохраняем информацию о распределении
+            await transportDB.updateBidStatus(bidId, 'в работе');
+            
+            // Сохраняем детали распределения в заявку через updateItem
+            await transportDB.updateItem('bids', bidId, {
+                assigned_trucks: JSON.stringify(truckAssignments),
+                status: 'в работе'
+            });
+            
+            console.log('Груз распределен:', assignments);
+        } catch (error) {
+            console.error('Ошибка при распределении груза:', error);
+            throw error;
+        }
+    }
+
     async loadTransportData() {
+        // Сначала пытаемся загрузить из IndexedDB
+        try {
+            const trucks = await transportDB.getAllTrucks();
+            if (trucks && trucks.length > 0) {
+                return trucks;
+            }
+        } catch (error) {
+            console.log('Не удалось загрузить транспорт из IndexedDB, используем localStorage');
+        }
+        
+        // Fallback на localStorage
         return JSON.parse(localStorage.getItem('trucks') || '[]');
     }
 }
 
-const adminPanel = new AdminPanel();
+// Создаем глобальный экземпляр adminPanel
+let adminPanel;
+if (typeof window !== 'undefined') {
+    window.adminPanel = new AdminPanel();
+    adminPanel = window.adminPanel;
+} else {
+    adminPanel = new AdminPanel();
+}
 
 // Функции для показа/скрытия разделов
 function showDashboard() {
@@ -417,7 +867,9 @@ function showTransport() {
     document.getElementById('bidsSection').style.display = 'none';
     document.getElementById('transportSection').style.display = 'block';
     document.getElementById('queueSection').style.display = 'none';
-    adminPanel.loadTransport();
+    if (window.adminPanel) {
+        adminPanel.loadTransport();
+    }
 }
 
 function showQueue() {
@@ -425,6 +877,60 @@ function showQueue() {
     document.getElementById('bidsSection').style.display = 'none';
     document.getElementById('transportSection').style.display = 'none';
     document.getElementById('queueSection').style.display = 'block';
+    // Загружаем заявки в очереди
+    if (typeof loadQueueBids === 'function') {
+        loadQueueBids();
+    } else if (window.adminPanel) {
+        // Альтернативный способ загрузки очереди
+        adminPanel.loadBids().then(() => {
+            const bids = adminPanel.bidsCache || [];
+            const queueBids = bids.filter(bid => bid.status === 'новая');
+            const queueList = document.getElementById('queueList');
+            
+            if (!queueList) return;
+            
+            if (queueBids.length === 0) {
+                queueList.innerHTML = '<p style="text-align: center; padding: 20px; color: #666;">Нет заявок в очереди</p>';
+                return;
+            }
+            
+            let html = '<h3 style="margin-bottom: 20px;">Заявки в очереди на обработку</h3>';
+            html += '<div class="queue-grid">';
+            
+            queueBids.forEach(bid => {
+                html += `
+                    <div class="queue-card">
+                        <div class="queue-card-header">
+                            <h4>#${bid.id} ${bid.wherefrom} → ${bid.towhere}</h4>
+                            <span class="queue-badge">Новая заявка</span>
+                        </div>
+                        
+                        <div class="queue-row">
+                            <span class="queue-label">Вес</span>
+                            <span class="queue-value">${bid.weight || '0'} кг</span>
+                        </div>
+                        <div class="queue-row">
+                            <span class="queue-label">Тип груза</span>
+                            <span class="queue-value">${bid.type || 'Обычный'}</span>
+                        </div>
+                        <div class="queue-row">
+                            <span class="queue-label">Дата</span>
+                            <span class="queue-value">${bid.date || 'Не указана'}</span>
+                        </div>
+                        
+                        <div class="queue-assign">
+                            <button class="btn-assign" onclick="if(window.adminPanel) adminPanel.openAssignModal(${bid.id})">
+                                Распределить
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            queueList.innerHTML = html;
+        });
+    }
 }
 
 function closeAssignModal() {
