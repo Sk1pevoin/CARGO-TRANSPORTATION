@@ -16,6 +16,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        // Загружаем данные из калькулятора если находимся на странице заявки
+        // (эта функция определена в script.js)
+        if (window.location.pathname.includes('Bid.html') && typeof loadCalculatorData === 'function') {
+            loadCalculatorData();
+        }
+        
         // Инициализация UI авторизации
         if (typeof authManager !== 'undefined') {
             authManager.updateUI();
@@ -373,7 +379,7 @@ function getStatusColor(status) {
 }
 
 // Фильтрация заявок
-function filterBids(status) {
+async function filterBids(status) {
     // Убираем активный класс со всех вкладок
     document.querySelectorAll('.filter-tab').forEach(tab => {
         tab.classList.remove('active');
@@ -394,22 +400,29 @@ function filterBids(status) {
         return;
     }
     
-    // Для обычного пользователя фильтруем заявки
-    loadCabinetData().then(() => {
-        if (status === 'all') return;
-        
+    // Для обычного пользователя загружаем и фильтруем заявки
+    try {
+        const bids = await transportDBCompat.getMyBids();
         const bidsList = document.getElementById('bidsList');
-        const bidCards = bidsList.querySelectorAll('.bid-card');
         
-        bidCards.forEach(card => {
-            const statusText = card.querySelector('span').textContent.trim();
-            if (statusText !== status) {
-                card.style.display = 'none';
-            } else {
-                card.style.display = 'block';
-            }
-        });
-    });
+        if (!bidsList) return;
+        
+        // Фильтруем заявки по статусу
+        let filteredBids = bids;
+        if (status !== 'all') {
+            filteredBids = bids.filter(bid => bid.status === status);
+        }
+        
+        // Отображаем отфильтрованные заявки
+        displayBids(filteredBids);
+        
+        // Обновляем статистику на основе отфильтрованных заявок
+        updateStats(filteredBids);
+        
+    } catch (error) {
+        console.error('Ошибка при фильтрации заявок:', error);
+        showError('Ошибка при загрузке заявок');
+    }
 }
 
 // Отмена заявки
@@ -445,11 +458,37 @@ function closeEditModal() {
 
 // Сохранение изменений профиля
 async function saveProfileChanges() {
+    const nameInput = document.getElementById('editUserName');
+    const emailInput = document.getElementById('editUserEmail');
+    const phoneInput = document.getElementById('editUserPhone');
+    
     const profileData = {
-        name: document.getElementById('editUserName').value,
-        email: document.getElementById('editUserEmail').value,
-        phone: document.getElementById('editUserPhone').value
+        name: nameInput.value.trim(),
+        email: emailInput.value.trim(),
+        phone: phoneInput.value.trim()
     };
+    
+    // Валидация
+    if (profileData.name && profileData.name.length < 2) {
+        showError('Имя должно содержать минимум 2 символа');
+        return;
+    }
+    
+    if (profileData.email && !isValidEmail(profileData.email)) {
+        showError('Введите корректный email адрес');
+        return;
+    }
+    
+    if (profileData.phone && profileData.phone.replace(/\D/g, '').length < 7) {
+        showError('Введите корректный номер телефона');
+        return;
+    }
+    
+    // Проверка что хотя бы одно поле заполнено
+    if (!profileData.name && !profileData.email && !profileData.phone) {
+        showError('Заполните хотя бы одно поле');
+        return;
+    }
     
     try {
         const result = await authManager.updateProfile(profileData);
@@ -463,6 +502,12 @@ async function saveProfileChanges() {
     } catch (error) {
         showError('Ошибка при обновлении профиля: ' + error.message);
     }
+}
+
+// Проверка email
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
 }
 
 // Показ ошибки
