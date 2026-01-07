@@ -323,7 +323,51 @@ async function loadAdminStats() {
     }
 }
 
-// 👤 ЗАГРУЗКА ЗАЯВОК ДЛЯ ПОЛЬЗОВАТЕЛЯ
+function exporT() {
+  // Клонируем body целиком
+  const content = document.body.cloneNode(true);
+
+  // Удаляем кнопки и лишний интерактив
+  content.querySelectorAll("button, nav a").forEach(el => el.remove());
+
+  // Подключаем стили
+  const styles = `
+    <style>
+      body { font-family: Arial, sans-serif; }
+      h1, h2, h3 { color: #333; }
+      .admin-header, footer { text-align: center; }
+      .stat-card { border: 1px solid #000; padding: 10px; margin: 5px; }
+    </style>
+  `;
+
+  const html = `
+  <html>
+    <head>
+      <meta charset="UTF-8">
+      ${styles}
+    </head>
+    <body>
+      ${content.innerHTML}
+    </body>
+  </html>
+  `;
+
+  const blob = new Blob([html], {
+    type: "application/msword"
+  });
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "admin_report.doc";
+  document.body.appendChild(a);
+  a.click();
+
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 async function loadBidsForUser() {
     try {
         const bids = await transportDBCompat.getMyBids();

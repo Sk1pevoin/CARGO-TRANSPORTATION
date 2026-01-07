@@ -23,16 +23,6 @@
     <div id="dashboard" class="admin-section">
       <div class="admin-titlebar">
         <h2>Дашборд</h2>
-        <div class="admin-actions">
-          <input type="text" id="globalSearch" class="admin-search" placeholder="Поиск заявок, маршрутов, транспорта..." oninput="adminPanel.handleGlobalSearch(this.value)">
-          <select id="statusFilter" class="admin-select" onchange="adminPanel.applyStatusFilter(this.value)">
-            <option value="all">Все статусы</option>
-            <option value="новая">Новые</option>
-            <option value="в работе">В работе</option>
-            <option value="выполнена">Выполненные</option>
-            <option value="отменена">Отмененные</option>
-          </select>
-        </div>
       </div>
 
       <div class="stats-grid">
@@ -63,9 +53,10 @@
     <div id="bidsSection" class="admin-section" style="display: none;">
       <div class="admin-titlebar">
         <h2>Заявки клиентов</h2>
+        <button class="export" onclick="exporT()">Экспорт</button>
         <div class="admin-actions">
-          <input type="text" id="bidSearch" class="admin-search" placeholder="Искать по маршруту..." oninput="adminPanel.filterBids()">
-          <select id="bidStatus" class="admin-select" onchange="adminPanel.filterBids()">
+          <input type="text" id="bidSearch" class="admin-search" placeholder="Искать по маршруту..." oninput="if(window.adminPanel) adminPanel.filterBids()">
+          <select id="bidStatus" class="admin-select" onchange="if(window.adminPanel) adminPanel.filterBids()">
             <option value="all">Все</option>
             <option value="новая">Новые</option>
             <option value="в работе">В работе</option>
@@ -80,7 +71,7 @@
     <div id="transportSection" class="admin-section" style="display: none;">
       <h2>Управление транспортом</h2>
       <div class="transport-controls">
-        <button onclick="addTransportModal()" class="btn-primary">Добавить транспорт</button>
+        <button onclick="showAddTransportModal()" class="btn-primary">Добавить транспорт</button>
       </div>
       <div id="transportList"></div>
       <div id="activeOrdersList"></div>
@@ -96,11 +87,11 @@
     <p>© 2015 Админ-панель грузоперевозок</p>
   </footer>
 
-  <div id="transportModal" class="modal" style="display: none;">
+  <div id="addTransportModal" class="modal" style="display: none;">
     <div class="modal-content">
-      <span class="close" onclick="closeTransportModal()">&times;</span>
+      <span class="close" onclick="closeAddTransportModal()">&times;</span>
       <h3>Добавить транспортное средство</h3>
-      <form id="transportForm">
+      <form id="addTransportForm">
         <label>Модель:</label>
         <input type="text" id="truckModel" required>
         
@@ -110,7 +101,10 @@
         <label>Грузоподъемность (кг):</label>
         <input type="number" id="truckCapacity" required>
         
-        <button type="submit">Добавить</button>
+        <div style="margin-top: 20px; text-align: right;">
+          <button type="button" onclick="closeAddTransportModal()" class="btn-secondary" style="margin-right: 10px;">Отмена</button>
+          <button type="submit" class="btn-primary">Добавить</button>
+        </div>
       </form>
     </div>
   </div>
@@ -120,11 +114,20 @@
       <span class="close" onclick="closeAssignModal()">&times;</span>
       <h3>Распределить заявку</h3>
       <div id="assignContent"></div>
+      <div style="margin-top: 20px; text-align: right;">
+        <button onclick="closeAssignModal()" class="btn-secondary" style="margin-right: 10px;">Отмена</button>
+        <button id="assignSubmitBtn" class="btn-primary">Подтвердить</button>
+      </div>
     </div>
   </div>
+</script>
 <script src="database.js"></script>
 <script src="auth.js"></script>
 <script src="script.js"></script>
 <script src="cabinet.js"></script>
+<script src="admin.js"></script>
 </body>
 </html>
+
+
+

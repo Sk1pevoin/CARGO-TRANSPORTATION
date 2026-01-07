@@ -366,4 +366,13 @@
   border-radius: 8px;
 }
 
-
+.export {
+  background: #4285f4;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 10px;
+}

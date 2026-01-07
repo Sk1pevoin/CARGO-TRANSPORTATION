@@ -1,4 +1,4 @@
-// database.js - Работа с данными через IndexedDB
+
 class IndexedDBManager {
     constructor() {
         this.dbName = 'CargoTransportationDB';
@@ -30,7 +30,7 @@ class IndexedDBManager {
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
 
-                // Создаем хранилища
+                
                 if (!db.objectStoreNames.contains('users')) {
                     const usersStore = db.createObjectStore('users', { keyPath: 'id', autoIncrement: true });
                     usersStore.createIndex('login', 'login', { unique: true });
@@ -66,14 +66,14 @@ class IndexedDBManager {
     }
 
     async initializeDefaultData() {
-        // Проверяем, есть ли тестовый пользователь
+        
         const testUser = await this.getUserByLogin('test');
         if (!testUser) {
             await this.createUser('test', '123456');
             console.log('✅ Создан тестовый пользователь: test/123456');
         }
 
-        // Проверяем, есть ли администратор
+        
         const adminUser = await this.getUserByLogin('admin');
         if (!adminUser) {
             await this.createAdminUser();
@@ -95,11 +95,11 @@ class IndexedDBManager {
         return this.addItem('users', adminUser);
     }
 
-    // 🔐 МЕТОДЫ ДЛЯ АВТОРИЗАЦИИ
+    
     async createUser(login, password) {
         const user = {
             login,
-            password, // В реальном приложении нужно хешировать!
+            password, 
             name: '',
             email: '',
             phone: '',
@@ -122,7 +122,7 @@ class IndexedDBManager {
         return this.updateItem('users', userId, updates);
     }
 
-    // 📝 МЕТОДЫ ДЛЯ РАБОТЫ С ЗАЯВКАМИ
+    
     async createBid(bidData) {
         const bid = {
             name: bidData.name || 'Заявка на перевозку',
@@ -158,7 +158,27 @@ class IndexedDBManager {
         return this.updateItem('bids', bidId, { status: newStatus });
     }
 
-    // 🚛 МЕТОДЫ ДЛЯ РАБОТЫ С ТРАНСПОРТОМ
+    async assignTruckToBid(bidId, truckId) {
+        
+        const bid = await this.getItem('bids', bidId);
+        if (!bid) {
+            throw new Error('Заявка не найдена');
+        }
+        
+        
+        const truck = await this.getItem('trucks', truckId);
+        if (truck) {
+            await this.updateItem('trucks', truckId, { status: 'busy' });
+        }
+        
+        
+        return this.updateItem('bids', bidId, { 
+            assigned_truck_id: truckId,
+            status: 'в работе'
+        });
+    }
+
+    
     async createTruck(truckData) {
         const truck = {
             model: truckData.model,
@@ -176,8 +196,32 @@ class IndexedDBManager {
     }
 
     async getAvailableTrucks() {
-        const trucks = await this.getAll('trucks');
-        return trucks.filter(truck => truck.status === 'available');
+        
+        try {
+            const trucksFromLS = JSON.parse(localStorage.getItem('trucks') || '[]');
+            if (trucksFromLS && trucksFromLS.length > 0) {
+                const available = trucksFromLS.filter(truck => truck.status === 'available');
+                console.log('🚛 Транспорт из localStorage:', trucksFromLS.length, 'всего,', available.length, 'доступно');
+                return available;
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке транспорта из localStorage:', error);
+        }
+        
+        
+        try {
+            const trucks = await this.getAll('trucks');
+            if (trucks && trucks.length > 0) {
+                const available = trucks.filter(truck => truck.status === 'available');
+                console.log('🚛 Транспорт из IndexedDB:', trucks.length, 'всего,', available.length, 'доступно');
+                return available;
+            }
+        } catch (error) {
+            console.log('Не удалось загрузить транспорт из IndexedDB:', error);
+        }
+        
+        console.log('⚠️ Транспорт не найден ни в localStorage, ни в IndexedDB');
+        return [];
     }
 
     async deleteTruck(truckId) {
@@ -188,7 +232,7 @@ class IndexedDBManager {
         return this.updateItem('trucks', truckId, { status: newStatus });
     }
 
-    // 📞 МЕТОДЫ ДЛЯ КОНТАКТОВ
+    
     async createContact(contactData) {
         const contact = {
             phone: contactData.phone,
@@ -206,7 +250,7 @@ class IndexedDBManager {
         return this.getAll('contacts');
     }
 
-    // 📊 МЕТОДЫ ДЛЯ СТАТИСТИКИ
+    
     async getStats() {
         const [bids, users, trucks] = await Promise.all([
             this.getAll('bids'),
@@ -224,7 +268,7 @@ class IndexedDBManager {
         };
     }
 
-    // 📈 МЕТОДЫ ДЛЯ РАСЧЕТОВ
+    
     async saveCalculation(calcData) {
         const calculation = {
             user_id: calcData.user_id,
@@ -249,7 +293,7 @@ class IndexedDBManager {
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
 
-    // 🔧 ОСНОВНЫЕ МЕТОДЫ РАБОТЫ С INDEXEDDB
+    
     addItem(storeName, item) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([storeName], 'readwrite');
@@ -330,19 +374,19 @@ class IndexedDBManager {
     }
 }
 
-// Создаем глобальный экземпляр базы данных
+
 const transportDB = new IndexedDBManager();
 
-// Эмуляция API для совместимости со старым кодом
+
 class TransportDatabase {
     constructor() {
         console.log('✅ TransportDatabase инициализирован (IndexedDB версия)');
     }
 
-    // 🔐 МЕТОДЫ ДЛЯ АВТОРИЗАЦИИ
+    
     async registerUser(authData) {
         try {
-            // Проверяем, нет ли уже пользователя с таким логином
+            
             const existingUser = await transportDB.getUserByLogin(authData.login);
             if (existingUser) {
                 throw new Error('Пользователь с таким логином уже существует');
@@ -350,7 +394,7 @@ class TransportDatabase {
 
             const user = await transportDB.createUser(authData.login, authData.password);
             
-            // Создаем простой токен
+            
             const token = btoa(JSON.stringify({ id: user.id, login: user.login }));
             
             return {
@@ -376,7 +420,7 @@ class TransportDatabase {
                 throw new Error('Неверный пароль');
             }
 
-            // Создаем простой токен
+            
             const token = btoa(JSON.stringify({ id: user.id, login: user.login }));
 
             return {
@@ -397,7 +441,7 @@ class TransportDatabase {
         }
     }
 
-    // 📝 МЕТОДЫ ДЛЯ РАБОТЫ С ЗАЯВКАМИ
+    
     async addBid(bidData) {
         try {
             const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
@@ -443,7 +487,7 @@ class TransportDatabase {
         }
     }
 
-    // 🚛 МЕТОДЫ ДЛЯ ТРАНСПОРТА
+    
     async addTruck(truckData) {
         try {
             return await transportDB.createTruck(truckData);
@@ -472,7 +516,7 @@ class TransportDatabase {
         }
     }
 
-    // 📞 МЕТОДЫ ДЛЯ КОНТАКТОВ
+    
     async addContact(contactData) {
         try {
             return await transportDB.createContact(contactData);
@@ -491,7 +535,7 @@ class TransportDatabase {
         }
     }
 
-    // 📊 МЕТОДЫ ДЛЯ СТАТИСТИКИ
+    
     async getStats() {
         try {
             return await transportDB.getStats();
@@ -508,13 +552,13 @@ class TransportDatabase {
         }
     }
 
-    // 👤 МЕТОДЫ ДЛЯ РАБОТЫ С ПРОФИЛЕМ
+    
     async updateUserProfile(profileData) {
         try {
             const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
             const updatedUser = await transportDB.updateUser(currentUser.id, profileData);
             
-            // Обновляем текущего пользователя
+            
             const newUserData = { ...currentUser, ...updatedUser };
             localStorage.setItem('current_user', JSON.stringify(newUserData));
             
@@ -528,7 +572,7 @@ class TransportDatabase {
         }
     }
 
-    // 📈 МЕТОДЫ ДЛЯ РАСЧЕТОВ
+    
     async saveCalculation(calcData) {
         try {
             const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
@@ -552,25 +596,64 @@ class TransportDatabase {
         }
     }
 
-    // Совместимость со старым кодом
+    
     getData(tableName) {
         return Promise.resolve([]);
     }
 
     async getSuggestions() {
         try {
-            const newBids = await transportDB.getBids().then(bids => 
-                bids.filter(b => b.status === 'новая')
-            );
+            console.log('🔍 Поиск предложений...');
+            const allBids = await transportDB.getBids();
+            console.log('📝 Всего заявок:', allBids.length);
+            
+            const newBids = allBids.filter(b => b.status === 'новая');
+            console.log('🆕 Новых заявок:', newBids.length);
+            
+            if (newBids.length === 0) {
+                console.log('ℹ️ Нет новых заявок');
+                return [];
+            }
             
             const availableTrucks = await transportDB.getAvailableTrucks();
+            console.log('🚛 Доступно транспорта:', availableTrucks.length);
             
-            return newBids.map(bid => ({
-                bid: bid,
-                trucks: availableTrucks.filter(truck => 
-                    !bid.weight || truck.capacity_kg >= bid.weight
-                )
-            }));
+            if (availableTrucks.length === 0) {
+                console.log('⚠️ Нет свободного транспорта, но показываем заявки');
+                
+                return newBids.map(bid => ({
+                    bid: bid,
+                    trucks: [],
+                    canDistribute: false,
+                    needsMultiple: false
+                }));
+            }
+            
+            return newBids.map(bid => {
+                const bidWeight = parseFloat(bid.weight) || 0;
+                
+                
+                const suitableSingleTrucks = availableTrucks.filter(truck => {
+                    const capacity = parseFloat(truck.capacity_kg) || 0;
+                    return capacity >= bidWeight;
+                });
+                
+                
+                const totalCapacity = availableTrucks.reduce((sum, truck) => {
+                    return sum + (parseFloat(truck.capacity_kg) || 0);
+                }, 0);
+                
+                const canDistribute = totalCapacity >= bidWeight;
+                const needsMultiple = bidWeight > 0 && suitableSingleTrucks.length === 0 && canDistribute;
+                
+                return {
+                    bid: bid,
+                    trucks: suitableSingleTrucks.length > 0 ? suitableSingleTrucks : availableTrucks,
+                    canDistribute: canDistribute,
+                    needsMultiple: needsMultiple,
+                    totalCapacity: totalCapacity
+                };
+            });
         } catch (error) {
             console.error('Ошибка при получении предложений:', error);
             return [];
@@ -578,5 +661,5 @@ class TransportDatabase {
     }
 }
 
-// Создаем глобальный экземпляр для совместимости
+
 const transportDBCompat = new TransportDatabase();
