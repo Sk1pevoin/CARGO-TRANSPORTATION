@@ -102,14 +102,22 @@
       <span class="close" onclick="closeAddTransportModal()">&times;</span>
       <h3>Добавить транспортное средство</h3>
       <form id="addTransportForm">
-        <label>Модель:</label>
-        <input type="text" id="truckModel" required>
+        <div id="transportFormErrors" style="display: none; background: #fee; color: #c33; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #fcc;">
+          <strong>Ошибки:</strong>
+          <ul id="transportErrorList" style="margin: 5px 0 0 20px; padding: 0;"></ul>
+        </div>
         
-        <label>Гос. номер:</label>
-        <input type="text" id="truckPlate" required>
+        <label>Модель транспортного средства:</label>
+        <input type="text" id="truckModel" placeholder="Например: МАЗ-6312" required minlength="2" maxlength="50">
+        <small style="color: #666; font-size: 12px;">Минимум 2 символа</small>
+        
+        <label>Государственный номер:</label>
+        <input type="text" id="truckPlate" placeholder="Например: 1234 AB-7" required pattern="[A-ZА-Я0-9\s-]+" minlength="4" maxlength="15">
+        <small style="color: #666; font-size: 12px;">Формат: буквы, цифры, дефисы. Минимум 4 символа</small>
         
         <label>Грузоподъемность (кг):</label>
-        <input type="number" id="truckCapacity" required>
+        <input type="number" id="truckCapacity" placeholder="Например: 10000" required min="100" max="100000" step="100">
+        <small style="color: #666; font-size: 12px;">От 100 до 100000 кг</small>
         
         <div style="margin-top: 20px; text-align: right;">
           <button type="button" onclick="closeAddTransportModal()" class="btn-secondary" style="margin-right: 10px;">Отмена</button>
