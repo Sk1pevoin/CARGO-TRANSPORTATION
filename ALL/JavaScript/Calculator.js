@@ -17,6 +17,35 @@ document.addEventListener('DOMContentLoaded', function() {
         const fromInput = document.getElementById('from');
         const toInput = document.getElementById('to');
         const distanceInput = document.getElementById('distance');
+        const weightInput = document.getElementById('weight');
+        
+        // Проверка на отрицательные значения для веса
+        if (weightInput) {
+            weightInput.addEventListener('input', function() {
+                if (this.value < 0) {
+                    this.value = 0;
+                }
+            });
+            weightInput.addEventListener('blur', function() {
+                if (this.value <= 0) {
+                    this.value = '';
+                }
+            });
+        }
+        
+        // Проверка на отрицательные значения для расстояния
+        if (distanceInput) {
+            distanceInput.addEventListener('input', function() {
+                if (this.value < 0) {
+                    this.value = 0;
+                }
+            });
+            distanceInput.addEventListener('blur', function() {
+                if (this.value <= 0) {
+                    this.value = '';
+                }
+            });
+        }
         
         if (fromInput && toInput && distanceInput) {
             let timeout;
@@ -27,10 +56,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const from = fromInput.value.trim();
                     const to = toInput.value.trim();
                     
-                    if (from && to && from !== to) {
+                    if (from && to && from !== to && !distanceInput.value) {
                         try {
                             const distance = await calculateRouteDistance(from, to);
-                            if (distance) {
+                            if (distance && distance > 0) {
                                 distanceInput.value = distance;
                             }
                         } catch (error) {
@@ -132,13 +161,13 @@ async function handleCalculatorSubmit(event) {
         return;
     }
     
-    if (calculationData.weight <= 0) {
-        alert('Пожалуйста, укажите вес груза');
+    if (calculationData.weight <= 0 || isNaN(calculationData.weight)) {
+        alert('Пожалуйста, укажите корректный вес груза (больше 0)');
         return;
     }
     
-    if (calculationData.distance <= 0) {
-        alert('Пожалуйста, укажите расстояние');
+    if (calculationData.distance <= 0 || isNaN(calculationData.distance)) {
+        alert('Пожалуйста, укажите корректное расстояние (больше 0)');
         return;
     }
     
@@ -310,22 +339,38 @@ function saveCalculationToLocalStorage(data, cost) {
 function createOrderFromCalc() {
     const user = authManager.getCurrentUser();
     
-    if (!user.id) {
+    if (!user || !user.id) {
         alert('Для создания заявки необходимо войти в систему');
         window.location.href = 'login.html';
         return;
     }
     
     const form = document.getElementById('calculatorForm');
+    if (!form) {
+        alert('Форма калькулятора не найдена');
+        return;
+    }
+    
     const formData = new FormData(form);
     
     const bidData = {
-        from: formData.get('from'),
-        to: formData.get('to'),
+        wherefrom: formData.get('from'),
+        towhere: formData.get('to'),
         weight: parseFloat(formData.get('weight')) || 0,
         type: getCargoTypeText(formData.get('type')),
         date: formData.get('date')
     };
+    
+    // Валидация перед сохранением
+    if (!bidData.wherefrom || !bidData.towhere) {
+        alert('Пожалуйста, заполните пункты отправления и назначения');
+        return;
+    }
+    
+    if (bidData.weight <= 0) {
+        alert('Пожалуйста, укажите корректный вес груза');
+        return;
+    }
     
     // Сохраняем данные для перенаправления
     sessionStorage.setItem('calculator_bid_data', JSON.stringify(bidData));
