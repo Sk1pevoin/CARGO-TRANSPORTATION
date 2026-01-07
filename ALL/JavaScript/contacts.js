@@ -114,17 +114,24 @@ function loadUserData() {
         const contactPhone = document.getElementById('contactPhone');
         const contactEmail = document.getElementById('contactEmail');
         
+        // Приоритет: текущий пользователь > сохраненные данные контактов
         if (contactName && !contactName.value) {
-            contactName.value = userData.name || currentUser.name || currentUser.login || '';
+            contactName.value = currentUser.name || userData.name || currentUser.login || '';
         }
         
         if (contactEmail && !contactEmail.value) {
-            contactEmail.value = userData.email || currentUser.email || '';
+            contactEmail.value = currentUser.email || userData.email || '';
         }
         
         if (contactPhone && !contactPhone.value) {
-            contactPhone.value = userData.phone || currentUser.phone || '';
+            contactPhone.value = currentUser.phone || userData.phone || '';
         }
+        
+        console.log('Данные пользователя загружены в форму контактов:', {
+            name: contactName?.value,
+            email: contactEmail?.value,
+            phone: contactPhone?.value
+        });
         
     } catch (error) {
         console.error('Ошибка при загрузке данных пользователя:', error);
