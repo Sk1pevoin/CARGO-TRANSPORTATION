@@ -159,26 +159,42 @@ class IndexedDBManager {
     }
 
     async assignTruckToBid(bidId, truckId) {
+<<<<<<< HEAD:ALL/JavaScript/database.js
         
+=======
+        // Обновляем заявку с назначенным транспортом
+>>>>>>> 31cff3be0be1120d70a8e3ac8ef62e9ecfd4e3a0:ALL/database.js
         const bid = await this.getItem('bids', bidId);
         if (!bid) {
             throw new Error('Заявка не найдена');
         }
         
+<<<<<<< HEAD:ALL/JavaScript/database.js
         
+=======
+        // Обновляем статус транспорта на "занят"
+>>>>>>> 31cff3be0be1120d70a8e3ac8ef62e9ecfd4e3a0:ALL/database.js
         const truck = await this.getItem('trucks', truckId);
         if (truck) {
             await this.updateItem('trucks', truckId, { status: 'busy' });
         }
         
+<<<<<<< HEAD:ALL/JavaScript/database.js
         
+=======
+        // Обновляем заявку
+>>>>>>> 31cff3be0be1120d70a8e3ac8ef62e9ecfd4e3a0:ALL/database.js
         return this.updateItem('bids', bidId, { 
             assigned_truck_id: truckId,
             status: 'в работе'
         });
     }
 
+<<<<<<< HEAD:ALL/JavaScript/database.js
     
+=======
+    // 🚛 МЕТОДЫ ДЛЯ РАБОТЫ С ТРАНСПОРТОМ
+>>>>>>> 31cff3be0be1120d70a8e3ac8ef62e9ecfd4e3a0:ALL/database.js
     async createTruck(truckData) {
         const truck = {
             model: truckData.model,
@@ -196,7 +212,11 @@ class IndexedDBManager {
     }
 
     async getAvailableTrucks() {
+<<<<<<< HEAD:ALL/JavaScript/database.js
         
+=======
+        // Сначала проверяем localStorage (основной источник для транспорта)
+>>>>>>> 31cff3be0be1120d70a8e3ac8ef62e9ecfd4e3a0:ALL/database.js
         try {
             const trucksFromLS = JSON.parse(localStorage.getItem('trucks') || '[]');
             if (trucksFromLS && trucksFromLS.length > 0) {
@@ -208,7 +228,11 @@ class IndexedDBManager {
             console.error('Ошибка при загрузке транспорта из localStorage:', error);
         }
         
+<<<<<<< HEAD:ALL/JavaScript/database.js
         
+=======
+        // Fallback на IndexedDB
+>>>>>>> 31cff3be0be1120d70a8e3ac8ef62e9ecfd4e3a0:ALL/database.js
         try {
             const trucks = await this.getAll('trucks');
             if (trucks && trucks.length > 0) {
@@ -620,7 +644,11 @@ class TransportDatabase {
             
             if (availableTrucks.length === 0) {
                 console.log('⚠️ Нет свободного транспорта, но показываем заявки');
+<<<<<<< HEAD:ALL/JavaScript/database.js
                 
+=======
+                // Нет свободного транспорта, но показываем заявки с предупреждением
+>>>>>>> 31cff3be0be1120d70a8e3ac8ef62e9ecfd4e3a0:ALL/database.js
                 return newBids.map(bid => ({
                     bid: bid,
                     trucks: [],
@@ -632,13 +660,21 @@ class TransportDatabase {
             return newBids.map(bid => {
                 const bidWeight = parseFloat(bid.weight) || 0;
                 
+<<<<<<< HEAD:ALL/JavaScript/database.js
                 
+=======
+                // Проверяем, можно ли перевезти одним транспортом
+>>>>>>> 31cff3be0be1120d70a8e3ac8ef62e9ecfd4e3a0:ALL/database.js
                 const suitableSingleTrucks = availableTrucks.filter(truck => {
                     const capacity = parseFloat(truck.capacity_kg) || 0;
                     return capacity >= bidWeight;
                 });
                 
+<<<<<<< HEAD:ALL/JavaScript/database.js
                 
+=======
+                // Проверяем, можно ли распределить между несколькими
+>>>>>>> 31cff3be0be1120d70a8e3ac8ef62e9ecfd4e3a0:ALL/database.js
                 const totalCapacity = availableTrucks.reduce((sum, truck) => {
                     return sum + (parseFloat(truck.capacity_kg) || 0);
                 }, 0);

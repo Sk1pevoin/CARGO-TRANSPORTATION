@@ -23,6 +23,19 @@
     <div id="dashboard" class="admin-section">
       <div class="admin-titlebar">
         <h2>Дашборд</h2>
+<<<<<<< HEAD
+=======
+        <div class="admin-actions">
+          <input type="text" id="globalSearch" class="admin-search" placeholder="Поиск заявок, маршрутов, транспорта..." oninput="if(window.adminPanel) adminPanel.handleGlobalSearch(this.value)">
+          <select id="statusFilter" class="admin-select" onchange="if(window.adminPanel) adminPanel.applyStatusFilter(this.value)">
+            <option value="all">Все статусы</option>
+            <option value="новая">Новые</option>
+            <option value="в работе">В работе</option>
+            <option value="выполнена">Выполненные</option>
+            <option value="отменена">Отмененные</option>
+          </select>
+        </div>
+>>>>>>> 31cff3be0be1120d70a8e3ac8ef62e9ecfd4e3a0
       </div>
 
       <div class="stats-grid">
