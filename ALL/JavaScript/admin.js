@@ -361,12 +361,29 @@ class AdminPanel {
 
     // ===================== TRANSPORT MANAGEMENT =====================
     async addTruck(truckData) {
+        // Валидация данных
+        const validationErrors = this.validateTruckData(truckData);
+        if (validationErrors.length > 0) {
+            throw new Error(validationErrors.join('\n'));
+        }
+        
         try {
             const trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
+            
+            // Проверка на уникальность гос. номера
+            const normalizedPlate = truckData.license_plate.trim().toUpperCase().replace(/\s+/g, ' ');
+            const existingTruck = trucks.find(t => 
+                t.license_plate.trim().toUpperCase().replace(/\s+/g, ' ') === normalizedPlate
+            );
+            
+            if (existingTruck) {
+                throw new Error('Транспортное средство с таким государственным номером уже существует');
+            }
+            
             const newTruck = {
                 id: Date.now(),
-                model: truckData.model,
-                license_plate: truckData.license_plate,
+                model: truckData.model.trim(),
+                license_plate: normalizedPlate,
                 capacity_kg: parseFloat(truckData.capacity_kg),
                 status: 'available',
                 created_at: new Date().toISOString()
@@ -383,6 +400,46 @@ class AdminPanel {
             console.error('Ошибка при добавлении транспорта:', error);
             throw error;
         }
+    }
+    
+    // Валидация данных транспорта
+    validateTruckData(truckData) {
+        const errors = [];
+        
+        // Проверка модели
+        if (!truckData.model || !truckData.model.trim()) {
+            errors.push('Модель транспортного средства обязательна для заполнения');
+        } else if (truckData.model.trim().length < 2) {
+            errors.push('Модель должна содержать минимум 2 символа');
+        } else if (truckData.model.trim().length > 50) {
+            errors.push('Модель не должна превышать 50 символов');
+        }
+        
+        // Проверка гос. номера
+        if (!truckData.license_plate || !truckData.license_plate.trim()) {
+            errors.push('Государственный номер обязателен для заполнения');
+        } else {
+            const plate = truckData.license_plate.trim();
+            if (plate.length < 4) {
+                errors.push('Государственный номер должен содержать минимум 4 символа');
+            } else if (plate.length > 15) {
+                errors.push('Государственный номер не должен превышать 15 символов');
+            } else if (!/^[A-ZА-Я0-9\s-]+$/i.test(plate)) {
+                errors.push('Государственный номер может содержать только буквы, цифры, пробелы и дефисы');
+            }
+        }
+        
+        // Проверка грузоподъемности
+        const capacity = parseFloat(truckData.capacity_kg);
+        if (isNaN(capacity) || capacity <= 0) {
+            errors.push('Грузоподъемность должна быть положительным числом');
+        } else if (capacity < 100) {
+            errors.push('Грузоподъемность должна быть не менее 100 кг');
+        } else if (capacity > 100000) {
+            errors.push('Грузоподъемность не должна превышать 100000 кг');
+        }
+        
+        return errors;
     }
 
     async loadTransport() {
@@ -1127,28 +1184,80 @@ function showAddTransportModal() {
 
 function closeAddTransportModal() {
     document.getElementById('addTransportModal').style.display = 'none';
-    document.getElementById('addTransportForm').reset();
+    const form = document.getElementById('addTransportForm');
+    if (form) {
+        form.reset();
+        hideTransportFormErrors();
+        
+        // Убираем подсветку полей
+        ['truckModel', 'truckPlate', 'truckCapacity'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.style.borderColor = '';
+            }
+        });
+    }
 }
 
 // Обработчик формы транспорта
 document.addEventListener('DOMContentLoaded', function() {
     const transportForm = document.getElementById('addTransportForm');
     if (transportForm) {
+        // Валидация в реальном времени
+        const modelInput = document.getElementById('truckModel');
+        const plateInput = document.getElementById('truckPlate');
+        const capacityInput = document.getElementById('truckCapacity');
+        
+        // Проверка на отрицательные значения для грузоподъемности
+        if (capacityInput) {
+            capacityInput.addEventListener('input', function() {
+                if (this.value < 0) {
+                    this.value = 0;
+                }
+                if (this.value > 100000) {
+                    this.value = 100000;
+                }
+            });
+        }
+        
+        // Очистка ошибок при вводе
+        [modelInput, plateInput, capacityInput].forEach(input => {
+            if (input) {
+                input.addEventListener('input', function() {
+                    hideTransportFormErrors();
+                    this.style.borderColor = '';
+                });
+            }
+        });
+        
         transportForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            // Скрываем предыдущие ошибки
+            hideTransportFormErrors();
+            
             const truckData = {
-                model: document.getElementById('truckModel').value,
-                license_plate: document.getElementById('truckPlate').value,
-                capacity_kg: parseFloat(document.getElementById('truckCapacity').value)
+                model: document.getElementById('truckModel').value.trim(),
+                license_plate: document.getElementById('truckPlate').value.trim(),
+                capacity_kg: document.getElementById('truckCapacity').value
             };
+            
+            // Валидация перед отправкой
+            const validationErrors = adminPanel.validateTruckData(truckData);
+            if (validationErrors.length > 0) {
+                showTransportFormErrors(validationErrors);
+                highlightInvalidFields(validationErrors, truckData);
+                return;
+            }
             
             try {
                 await adminPanel.addTruck(truckData);
                 closeAddTransportModal();
                 showSuccess('Транспорт успешно добавлен!');
             } catch (error) {
-                showError('Ошибка при добавлении транспорта: ' + error.message);
+                const errorMessage = error.message || 'Неизвестная ошибка';
+                showTransportFormErrors([errorMessage]);
+                showError('Ошибка при добавлении транспорта: ' + errorMessage);
             }
         });
     }
@@ -1166,6 +1275,55 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Функции для отображения ошибок формы транспорта
+function showTransportFormErrors(errors) {
+    const errorContainer = document.getElementById('transportFormErrors');
+    const errorList = document.getElementById('transportErrorList');
+    
+    if (errorContainer && errorList) {
+        errorList.innerHTML = '';
+        errors.forEach(error => {
+            const li = document.createElement('li');
+            li.textContent = error;
+            errorList.appendChild(li);
+        });
+        errorContainer.style.display = 'block';
+    }
+}
+
+function hideTransportFormErrors() {
+    const errorContainer = document.getElementById('transportFormErrors');
+    if (errorContainer) {
+        errorContainer.style.display = 'none';
+    }
+    
+    // Убираем подсветку полей
+    ['truckModel', 'truckPlate', 'truckCapacity'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.style.borderColor = '';
+        }
+    });
+}
+
+function highlightInvalidFields(errors, truckData) {
+    // Подсвечиваем поля с ошибками
+    if (errors.some(e => e.includes('Модель'))) {
+        const input = document.getElementById('truckModel');
+        if (input) input.style.borderColor = '#dc3545';
+    }
+    
+    if (errors.some(e => e.includes('номер') || e.includes('Государственный'))) {
+        const input = document.getElementById('truckPlate');
+        if (input) input.style.borderColor = '#dc3545';
+    }
+    
+    if (errors.some(e => e.includes('Грузоподъемность') || e.includes('грузоподъемность'))) {
+        const input = document.getElementById('truckCapacity');
+        if (input) input.style.borderColor = '#dc3545';
+    }
+}
 
 // Вспомогательные функции уведомлений
 function showSuccess(message) {

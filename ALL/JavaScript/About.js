@@ -1,11 +1,11 @@
-// about.js - Функционал страницы "О нас"
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeStatsCounter();
     initializeFAQ();
     loadCompanyStats();
 });
 
-// Анимация счетчиков статистики
+
 function initializeStatsCounter() {
     const statElements = document.querySelectorAll('.stat-num');
     
@@ -25,8 +25,8 @@ function initializeStatsCounter() {
 
 function animateCounter(element, finalValue) {
     let currentValue = 0;
-    const duration = 2000; // 2 секунды
-    const increment = finalValue / (duration / 16); // 60fps
+    const duration = 2000; 
+    const increment = finalValue / (duration / 16); 
     
     function updateCounter() {
         currentValue += increment;
@@ -41,7 +41,7 @@ function animateCounter(element, finalValue) {
     updateCounter();
 }
 
-// Функционал FAQ
+
 function initializeFAQ() {
     const faqItems = document.querySelectorAll('.faq-item');
     
@@ -52,12 +52,12 @@ function initializeFAQ() {
         question.addEventListener('click', () => {
             const isOpen = answer.style.display === 'block';
             
-            // Закрываем все ответы
+            
             document.querySelectorAll('.faq-a').forEach(a => {
                 a.style.display = 'none';
             });
             
-            // Открываем/закрываем текущий ответ
+            
             if (!isOpen) {
                 answer.style.display = 'block';
             }
@@ -65,17 +65,17 @@ function initializeFAQ() {
     });
 }
 
-// Загрузка статистики компании
+
 async function loadCompanyStats() {
     try {
-        // В реальном приложении здесь был бы запрос к API
+        
         const stats = await transportDB.getStats();
         
-        // Обновляем счетчики на странице
+        
         updateStatsOnPage(stats);
     } catch (error) {
         console.error('Ошибка при загрузке статистики:', error);
-        // Используем данные по умолчанию
+        
         const defaultStats = {
             totalBids: 5000,
             availableTrucks: 120,
@@ -86,7 +86,7 @@ async function loadCompanyStats() {
 }
 
 function updateStatsOnPage(stats) {
-    // Обновляем элементы статистики, если они есть на странице
+    
     const statElements = {
         '5000': stats.totalBids,
         '120': stats.availableTrucks,
@@ -101,7 +101,7 @@ function updateStatsOnPage(stats) {
     });
 }
 
-// Показ модального окна с детальной информацией о команде
+
 function showTeamMemberDetails(memberId) {
     const teamMembers = {
         1: {
@@ -142,12 +142,12 @@ function showTeamMemberDetails(memberId) {
             </div>
         `;
         
-        // Создаем модальное окно
+        
         const modalContainer = document.createElement('div');
         modalContainer.innerHTML = modalHtml;
         document.body.appendChild(modalContainer);
         
-        // Обработчик закрытия по клику вне окна
+        
         window.onclick = function(event) {
             if (event.target === modalContainer.firstChild) {
                 closeModal();
@@ -163,7 +163,7 @@ function closeModal() {
     }
 }
 
-// Инициализация интерактивной временной шкалы
+
 function initializeTimeline() {
     const timelineItems = document.querySelectorAll('.timeline-item');
     
