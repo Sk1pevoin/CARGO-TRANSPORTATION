@@ -16,7 +16,7 @@ class AdminPanel {
 
     async loadStats() {
         try {
-            const stats = await transportDB.getStats();
+            const stats = await transportDBCompat.getStats();
             this.displayStats(stats);
             
             if (document.getElementById('totalBids')) {
@@ -36,7 +36,7 @@ class AdminPanel {
             }
         } catch (error) {
             console.error('Ошибка при загрузке статистики:', error);
-            const bids = await transportDB.getAllBids();
+            const bids = await transportDBCompat.getAllBids();
             const stats = {
                 totalBids: bids.length,
                 newBids: bids.filter(bid => bid.status === 'новая').length,
@@ -122,16 +122,26 @@ class AdminPanel {
     }
 
     async loadBids() {
-        const bids = await transportDB.getBids();
-        this.bidsCache = bids;
-        this.applyBidFilters();
+        try {
+            const bids = await transportDBCompat.getAllBids();
+            this.bidsCache = bids || [];
+            this.applyBidFilters();
+        } catch (error) {
+            console.error('Ошибка при загрузке заявок:', error);
+            this.bidsCache = [];
+            this.applyBidFilters();
+        }
     }
 
     async displayBids(bids) {
         const bidsList = document.getElementById('zayavkiList');
+        if (!bidsList) {
+            console.error('Элемент zayavkiList не найден');
+            return;
+        }
         
-        if (bids.length === 0) {
-            bidsList.innerHTML = '<p>Нет заявок</p>';
+        if (!bids || bids.length === 0) {
+            bidsList.innerHTML = '<p style="text-align: center; padding: 20px; color: #666;">Нет заявок</p>';
             return;
         }
 
@@ -231,7 +241,7 @@ class AdminPanel {
             
             // Если пытаемся взять заявку в работу, проверяем наличие транспорта
             if (newStatus === 'в работе') {
-                const bid = await transportDB.getBidById(bidId);
+                const bid = await transportDBCompat.getBidById(bidId);
                 if (!bid) {
                     alert('Заявка не найдена');
                     return;
@@ -247,7 +257,8 @@ class AdminPanel {
                 
                 if (!assignment && !bid.assigned_truck_id) {
                     // Транспорт не назначен, проверяем наличие свободного транспорта
-                    const availableTrucks = await transportDB.getAvailableTrucks();
+                    const trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
+                    const availableTrucks = trucks.filter(t => t.status === 'available');
                     console.log('🚛 Доступно транспорта:', availableTrucks.length);
                     
                     if (availableTrucks.length === 0) {
@@ -318,14 +329,29 @@ class AdminPanel {
                 }
             }
             
+            // Если статус меняется на "выполнена" или "отменена", освобождаем транспорт
+            if (newStatus === 'выполнена' || newStatus === 'отменена') {
+                await this.freeTransportForBid(bidId);
+            }
+            
             // Обновляем статус
-            await transportDB.updateBidStatus(bidId, newStatus);
+            await transportDBCompat.updateBidStatus(bidId, newStatus);
             this.loadBids();
             this.loadStats();
             this.loadSuggestions();
+            this.loadTransport(); // Обновляем список транспорта
+            
+            // Обновляем очередь если она открыта
+            if (document.getElementById('queueSection')?.style.display !== 'none') {
+                this.loadQueueBids();
+            }
             
             if (newStatus === 'в работе') {
                 showSuccess('Заявка взята в работу');
+            } else if (newStatus === 'выполнена') {
+                showSuccess('Заявка выполнена. Транспорт освобожден.');
+            } else if (newStatus === 'отменена') {
+                showSuccess('Заявка отменена. Транспорт освобожден.');
             }
         } catch (error) {
             console.error('Ошибка при обновлении статуса:', error);
@@ -361,19 +387,8 @@ class AdminPanel {
 
     async loadTransport() {
         try {
-            // Сначала пытаемся загрузить из IndexedDB
-            let trucks = [];
-            try {
-                trucks = await transportDB.getAllTrucks();
-                if (!trucks || trucks.length === 0) {
-                    throw new Error('Нет транспорта в IndexedDB');
-                }
-            } catch (error) {
-                console.log('Загрузка транспорта из localStorage');
-                // Fallback на localStorage
-                trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
-            }
-            
+            // Загружаем транспорт из localStorage
+            const trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
             console.log('🚛 Загружено транспорта:', trucks.length);
             this.displayTransport(trucks);
         } catch (error) {
@@ -550,7 +565,7 @@ class AdminPanel {
             modal.style.display = 'block';
 
             const [bid, trucks] = await Promise.all([
-                transportDB.getBidById(bidId),
+                transportDBCompat.getBidById(bidId),
                 this.loadTransportData()
             ]);
             const available = trucks.filter(t => t.status === 'available');
@@ -669,6 +684,7 @@ class AdminPanel {
                     try {
                         await this.assignMultipleTrucksToBid(bidId, selectedTrucks);
                         this.loadBids();
+                        this.loadStats();
                         this.loadSuggestions();
                         closeAssignModal();
                         showSuccess('Груз успешно распределен между транспортными средствами');
@@ -685,8 +701,9 @@ class AdminPanel {
                         return;
                     }
                     try {
-                        await transportDB.assignTruckToBid(bidId, truckId);
+                        await transportDBCompat.assignTruckToBid(bidId, truckId);
                         this.loadBids();
+                        this.loadStats();
                         this.loadSuggestions();
                         closeAssignModal();
                         showSuccess('Транспорт успешно назначен на заявку');
@@ -773,12 +790,12 @@ class AdminPanel {
     async assignMultipleTrucksToBid(bidId, truckAssignments) {
         try {
             // Сохраняем информацию о распределении в заявку
-            const bid = await transportDB.getBidById(bidId);
+            const bid = await transportDBCompat.getBidById(bidId);
             if (!bid) {
                 throw new Error('Заявка не найдена');
             }
             
-            // Сохраняем распределение в localStorage (можно также в IndexedDB)
+            // Сохраняем распределение в localStorage
             const assignments = {
                 bidId: bidId,
                 trucks: truckAssignments,
@@ -805,14 +822,8 @@ class AdminPanel {
             });
             localStorage.setItem('trucks', JSON.stringify(trucks));
             
-            // Обновляем заявку - сохраняем информацию о распределении
-            await transportDB.updateBidStatus(bidId, 'в работе');
-            
-            // Сохраняем детали распределения в заявку через updateItem
-            await transportDB.updateItem('bids', bidId, {
-                assigned_trucks: JSON.stringify(truckAssignments),
-                status: 'в работе'
-            });
+            // Обновляем статус заявки на "в работе"
+            await transportDBCompat.updateBidStatus(bidId, 'в работе');
             
             console.log('Груз распределен:', assignments);
         } catch (error) {
@@ -822,18 +833,180 @@ class AdminPanel {
     }
 
     async loadTransportData() {
-        // Сначала пытаемся загрузить из IndexedDB
-        try {
-            const trucks = await transportDB.getAllTrucks();
-            if (trucks && trucks.length > 0) {
-                return trucks;
-            }
-        } catch (error) {
-            console.log('Не удалось загрузить транспорт из IndexedDB, используем localStorage');
-        }
-        
-        // Fallback на localStorage
+        // Загружаем транспорт из localStorage
         return JSON.parse(localStorage.getItem('trucks') || '[]');
+    }
+
+    // Освобождение транспорта для заявки
+    async freeTransportForBid(bidId) {
+        try {
+            // Получаем информацию о распределении транспорта
+            const assignments = JSON.parse(localStorage.getItem('cargo_assignments') || '[]');
+            const assignment = assignments.find(a => a.bidId === bidId);
+            
+            if (!assignment || !assignment.trucks || assignment.trucks.length === 0) {
+                // Проверяем старый формат (один транспорт)
+                const bid = await transportDBCompat.getBidById(bidId);
+                if (bid && bid.assigned_truck_id) {
+                    const trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
+                    const truck = trucks.find(t => t.id === bid.assigned_truck_id);
+                    if (truck) {
+                        truck.status = 'available';
+                        localStorage.setItem('trucks', JSON.stringify(trucks));
+                        console.log('✅ Транспорт #' + truck.id + ' освобожден (старый формат)');
+                    }
+                }
+                return;
+            }
+            
+            // Освобождаем все транспортные средства, назначенные на эту заявку
+            const trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
+            let freedCount = 0;
+            
+            assignment.trucks.forEach(truckAssignment => {
+                const truck = trucks.find(t => t.id === truckAssignment.truckId);
+                if (truck && truck.status === 'busy') {
+                    truck.status = 'available';
+                    freedCount++;
+                    console.log('✅ Транспорт #' + truck.id + ' (' + truck.model + ') освобожден');
+                }
+            });
+            
+            if (freedCount > 0) {
+                localStorage.setItem('trucks', JSON.stringify(trucks));
+                console.log(`✅ Освобождено транспорта: ${freedCount}`);
+            }
+            
+            // Удаляем информацию о распределении (опционально, можно оставить для истории)
+            // const filteredAssignments = assignments.filter(a => a.bidId !== bidId);
+            // localStorage.setItem('cargo_assignments', JSON.stringify(filteredAssignments));
+            
+        } catch (error) {
+            console.error('Ошибка при освобождении транспорта:', error);
+        }
+    }
+
+    // Загрузка заявок в очереди
+    async loadQueueBids() {
+        try {
+            // Загружаем все заявки
+            await this.loadBids();
+            const bids = this.bidsCache || [];
+            const queueBids = bids.filter(bid => bid.status === 'новая');
+            const queueList = document.getElementById('queueList');
+            
+            if (!queueList) {
+                console.error('Элемент queueList не найден');
+                return;
+            }
+            
+            if (queueBids.length === 0) {
+                queueList.innerHTML = '<p style="text-align: center; padding: 20px; color: #666;">Нет заявок в очереди</p>';
+                return;
+            }
+            
+            let html = '<h3 style="margin-bottom: 20px; color: #0a1a33;">Заявки в очереди на обработку</h3>';
+            html += '<div class="queue-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">';
+            
+            queueBids.forEach(bid => {
+                const bidWeight = parseFloat(bid.weight) || 0;
+                html += `
+                    <div class="queue-card" style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div class="queue-card-header" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e5e7eb;">
+                            <h4 style="margin: 0 0 8px 0; color: #0a1a33; font-size: 18px;">#${bid.id} ${bid.wherefrom || ''} → ${bid.towhere || ''}</h4>
+                            <span class="queue-badge" style="background: #007bff; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">Новая заявка</span>
+                        </div>
+                        
+                        <div class="queue-row" style="display: flex; justify-content: space-between; margin-bottom: 10px; padding: 8px 0;">
+                            <span class="queue-label" style="color: #666; font-weight: 500;">Вес:</span>
+                            <span class="queue-value" style="color: #0a1a33; font-weight: bold;">${bidWeight > 0 ? bidWeight + ' кг' : 'не указан'}</span>
+                        </div>
+                        <div class="queue-row" style="display: flex; justify-content: space-between; margin-bottom: 10px; padding: 8px 0;">
+                            <span class="queue-label" style="color: #666; font-weight: 500;">Тип груза:</span>
+                            <span class="queue-value" style="color: #0a1a33;">${bid.type || 'Обычный'}</span>
+                        </div>
+                        <div class="queue-row" style="display: flex; justify-content: space-between; margin-bottom: 15px; padding: 8px 0;">
+                            <span class="queue-label" style="color: #666; font-weight: 500;">Дата:</span>
+                            <span class="queue-value" style="color: #0a1a33;">${bid.date || bid.created_at ? (bid.date || bid.created_at.split('T')[0]) : 'Не указана'}</span>
+                        </div>
+                        
+                        <div class="queue-assign" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                            <button class="btn-assign" onclick="if(window.adminPanel) adminPanel.openAssignModal(${bid.id})" 
+                                    style="padding: 10px 16px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; width: 100%;">
+                                Распределить
+                            </button>
+                            <button class="btn-secondary" onclick="if(window.adminPanel) adminPanel.takeBidInWork(${bid.id})" 
+                                    style="padding: 10px 16px; background: #ffc107; color: #000; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; width: 100%;">
+                                Взять в работу
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            queueList.innerHTML = html;
+        } catch (error) {
+            console.error('Ошибка при загрузке очереди:', error);
+            const queueList = document.getElementById('queueList');
+            if (queueList) {
+                queueList.innerHTML = '<p style="text-align: center; padding: 20px; color: #dc3545;">Ошибка загрузки очереди: ' + error.message + '</p>';
+            }
+        }
+    }
+
+    // Взять заявку в работу из очереди (с проверкой транспорта)
+    async takeBidInWork(bidId) {
+        try {
+            const bid = await transportDBCompat.getBidById(bidId);
+            if (!bid) {
+                alert('Заявка не найдена');
+                return;
+            }
+
+            // Проверяем, назначен ли уже транспорт
+            const assignments = JSON.parse(localStorage.getItem('cargo_assignments') || '[]');
+            const assignment = assignments.find(a => a.bidId === bidId);
+            
+            if (!assignment && !bid.assigned_truck_id) {
+                // Транспорт не назначен
+                const trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
+                const availableTrucks = trucks.filter(t => t.status === 'available');
+                
+                if (availableTrucks.length === 0) {
+                    alert('⚠️ Невозможно взять заявку в работу: нет свободного транспорта!\n\nПожалуйста, сначала распределите груз на транспортные средства.');
+                    return;
+                }
+                
+                // Предлагаем распределить
+                const confirmDistribute = confirm(
+                    '⚠️ Для заявки не назначен транспорт!\n\n' +
+                    'Необходимо сначала распределить груз на транспортные средства.\n\n' +
+                    'Открыть окно распределения?'
+                );
+                
+                if (confirmDistribute) {
+                    this.openAssignModal(bidId);
+                }
+                return;
+            }
+
+            // Транспорт назначен, можно взять в работу
+            await transportDBCompat.updateBidStatus(bidId, 'в работе');
+            this.loadBids();
+            this.loadStats();
+            this.loadSuggestions();
+            
+            // Обновляем очередь если она открыта
+            if (document.getElementById('queueSection')?.style.display !== 'none') {
+                this.loadQueueBids();
+            }
+            
+            showSuccess('Заявка взята в работу');
+        } catch (error) {
+            console.error('Ошибка при взятии заявки в работу:', error);
+            alert('Ошибка: ' + error.message);
+        }
     }
 }
 
@@ -852,6 +1025,11 @@ function showDashboard() {
     document.getElementById('bidsSection').style.display = 'none';
     document.getElementById('transportSection').style.display = 'none';
     document.getElementById('queueSection').style.display = 'none';
+    // Обновляем статистику и предложения при показе dashboard
+    if (window.adminPanel) {
+        adminPanel.loadStats();
+        adminPanel.loadSuggestions();
+    }
 }
 
 function showBids() {
@@ -921,6 +1099,10 @@ function showQueue() {
                         <div class="queue-assign">
                             <button class="btn-assign" onclick="if(window.adminPanel) adminPanel.openAssignModal(${bid.id})">
                                 Распределить
+                            </button>
+                            <button class="btn-secondary" onclick="if(window.adminPanel) adminPanel.takeBidInWork(${bid.id})" 
+                                    style="margin-top: 8px; padding: 6px 12px; background: #ffc107; color: #000; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">
+                                Взять в работу
                             </button>
                         </div>
                     </div>

@@ -465,6 +465,16 @@ class TransportDatabase {
         }
     }
 
+    async getBidById(id) {
+        try {
+            const bids = await apiRequest('/api/bids');
+            return bids.find(bid => bid.id === parseInt(id, 10)) || null;
+        } catch (error) {
+            console.error('Ошибка при получении заявки:', error);
+            return null;
+        }
+    }
+
     async getMyBids() {
         try {
             return await apiRequest('/api/bids?mine=true');
@@ -482,6 +492,42 @@ class TransportDatabase {
             });
         } catch (error) {
             console.error('Ошибка при обновлении статуса заявки:', error);
+            throw error;
+        }
+    }
+
+    async assignTruckToBid(bidId, truckId) {
+        try {
+            // Обновляем статус заявки на "в работе"
+            await this.updateBidStatus(bidId, 'в работе');
+            // Сохраняем информацию о назначении транспорта в localStorage
+            // (так как в текущей схеме БД нет поля assigned_truck_id в API)
+            const assignments = JSON.parse(localStorage.getItem('cargo_assignments') || '[]');
+            const existingIndex = assignments.findIndex(a => a.bidId === bidId);
+            
+            if (existingIndex >= 0) {
+                assignments[existingIndex].trucks = [{ truckId: truckId, assignedWeight: null }];
+            } else {
+                assignments.push({
+                    bidId: bidId,
+                    trucks: [{ truckId: truckId, assignedWeight: null }],
+                    assignedAt: new Date().toISOString()
+                });
+            }
+            
+            localStorage.setItem('cargo_assignments', JSON.stringify(assignments));
+            
+            // Обновляем статус транспорта
+            const trucks = JSON.parse(localStorage.getItem('trucks') || '[]');
+            const truck = trucks.find(t => t.id === truckId);
+            if (truck) {
+                truck.status = 'busy';
+                localStorage.setItem('trucks', JSON.stringify(trucks));
+            }
+            
+            return { success: true };
+        } catch (error) {
+            console.error('Ошибка при назначении транспорта:', error);
             throw error;
         }
     }
