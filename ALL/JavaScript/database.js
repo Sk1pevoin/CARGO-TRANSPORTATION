@@ -372,30 +372,55 @@ class IndexedDBManager {
 const transportDB = new IndexedDBManager();
 
 
+// Вспомогательная функция для работы с API
+const API_BASE_URL = window.location.origin;
+
+async function apiRequest(endpoint, options = {}) {
+    const token = localStorage.getItem('auth_token');
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Ошибка сервера' }));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error(`API request error (${endpoint}):`, error);
+        throw error;
+    }
+}
+
 class TransportDatabase {
     constructor() {
-        console.log('✅ TransportDatabase инициализирован (IndexedDB версия)');
+        console.log('✅ TransportDatabase инициализирован (API версия)');
     }
 
     
     async registerUser(authData) {
         try {
+            const result = await apiRequest('/api/register', {
+                method: 'POST',
+                body: JSON.stringify({
+                    login: authData.login,
+                    password: authData.password
+                })
+            });
             
-            const existingUser = await transportDB.getUserByLogin(authData.login);
-            if (existingUser) {
-                throw new Error('Пользователь с таким логином уже существует');
-            }
-
-            const user = await transportDB.createUser(authData.login, authData.password);
-            
-            
-            const token = btoa(JSON.stringify({ id: user.id, login: user.login }));
-            
-            return {
-                success: true,
-                user: { id: user.id, login: user.login },
-                token: token
-            };
+            return result;
         } catch (error) {
             console.error('Ошибка при регистрации:', error);
             throw error;
@@ -404,31 +429,12 @@ class TransportDatabase {
 
     async loginUser(login, password) {
         try {
-            const user = await transportDB.getUserByLogin(login);
+            const result = await apiRequest('/api/login', {
+                method: 'POST',
+                body: JSON.stringify({ login, password })
+            });
             
-            if (!user) {
-                throw new Error('Пользователь не найден');
-            }
-
-            if (user.password !== password) {
-                throw new Error('Неверный пароль');
-            }
-
-            
-            const token = btoa(JSON.stringify({ id: user.id, login: user.login }));
-
-            return {
-                success: true,
-                user: { 
-                    id: user.id, 
-                    login: user.login,
-                    name: user.name,
-                    email: user.email,
-                    phone: user.phone,
-                    role: user.role
-                },
-                token: token
-            };
+            return result;
         } catch (error) {
             console.error('Ошибка при входе:', error);
             throw error;
@@ -438,14 +444,12 @@ class TransportDatabase {
     
     async addBid(bidData) {
         try {
-            const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
-            
-            const bid = await transportDB.createBid({
-                ...bidData,
-                user_id: currentUser.id
+            const result = await apiRequest('/api/bids', {
+                method: 'POST',
+                body: JSON.stringify(bidData)
             });
-
-            return bid;
+            
+            return result;
         } catch (error) {
             console.error('Ошибка при добавлении заявки:', error);
             throw error;
@@ -454,7 +458,7 @@ class TransportDatabase {
 
     async getAllBids() {
         try {
-            return await transportDB.getBids();
+            return await apiRequest('/api/bids');
         } catch (error) {
             console.error('Ошибка при получении заявок:', error);
             return [];
@@ -463,8 +467,7 @@ class TransportDatabase {
 
     async getMyBids() {
         try {
-            const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
-            return await transportDB.getBids(currentUser.id);
+            return await apiRequest('/api/bids?mine=true');
         } catch (error) {
             console.error('Ошибка при получении заявок пользователя:', error);
             return [];
@@ -473,8 +476,10 @@ class TransportDatabase {
 
     async updateBidStatus(id, newStatus) {
         try {
-            await transportDB.updateBidStatus(id, newStatus);
-            return { success: true };
+            return await apiRequest(`/api/bids/${id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: newStatus })
+            });
         } catch (error) {
             console.error('Ошибка при обновлении статуса заявки:', error);
             throw error;
@@ -513,7 +518,10 @@ class TransportDatabase {
     
     async addContact(contactData) {
         try {
-            return await transportDB.createContact(contactData);
+            return await apiRequest('/api/contacts', {
+                method: 'POST',
+                body: JSON.stringify(contactData)
+            });
         } catch (error) {
             console.error('Ошибка при добавлении контакта:', error);
             throw error;
@@ -522,7 +530,7 @@ class TransportDatabase {
 
     async getAllContacts() {
         try {
-            return await transportDB.getContacts();
+            return await apiRequest('/api/contacts');
         } catch (error) {
             console.error('Ошибка при получении контактов:', error);
             return [];
@@ -532,7 +540,7 @@ class TransportDatabase {
     
     async getStats() {
         try {
-            return await transportDB.getStats();
+            return await apiRequest('/api/admin/stats');
         } catch (error) {
             console.error('Ошибка при получении статистики:', error);
             return {
@@ -549,17 +557,17 @@ class TransportDatabase {
     
     async updateUserProfile(profileData) {
         try {
-            const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
-            const updatedUser = await transportDB.updateUser(currentUser.id, profileData);
+            const result = await apiRequest('/api/user/profile', {
+                method: 'PATCH',
+                body: JSON.stringify(profileData)
+            });
             
+            // Обновляем пользователя в localStorage
+            if (result.success && result.user) {
+                localStorage.setItem('current_user', JSON.stringify(result.user));
+            }
             
-            const newUserData = { ...currentUser, ...updatedUser };
-            localStorage.setItem('current_user', JSON.stringify(newUserData));
-            
-            return {
-                success: true,
-                user: newUserData
-            };
+            return result;
         } catch (error) {
             console.error('Ошибка при обновлении профиля:', error);
             throw error;
@@ -598,7 +606,7 @@ class TransportDatabase {
     async getSuggestions() {
         try {
             console.log('🔍 Поиск предложений...');
-            const allBids = await transportDB.getBids();
+            const allBids = await this.getAllBids();
             console.log('📝 Всего заявок:', allBids.length);
             
             const newBids = allBids.filter(b => b.status === 'новая');
@@ -609,7 +617,14 @@ class TransportDatabase {
                 return [];
             }
             
-            const availableTrucks = await transportDB.getAvailableTrucks();
+            // Для транспорта используем IndexedDB как fallback, так как API для транспорта может быть не реализовано
+            let availableTrucks = [];
+            try {
+                availableTrucks = await transportDB.getAvailableTrucks();
+            } catch (error) {
+                console.log('Транспорт из IndexedDB недоступен, используем пустой список');
+            }
+            
             console.log('🚛 Доступно транспорта:', availableTrucks.length);
             
             if (availableTrucks.length === 0) {

@@ -10,16 +10,24 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
+// Определяем корневую директорию проекта (на уровень выше папки JavaScript)
+const rootDir = path.join(__dirname, '..');
+
 // Middleware - ВАЖНО: cors должен быть первым
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'file://'],
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
     credentials: true
 }));
 app.use(express.json());
-app.use(express.static(__dirname));
 
-// Добавляем обработку OPTIONS запросов для CORS
-app.options('*', cors());
+// Статические файлы из корня проекта
+app.use(express.static(rootDir));
+// Статические файлы из папки Styles
+app.use('/Styles', express.static(path.join(rootDir, 'Styles')));
+// Статические файлы из папки JavaScript
+app.use('/JavaScript', express.static(path.join(rootDir, 'JavaScript')));
+// Статические файлы из папки Photos (если существует)
+app.use('/Photos', express.static(path.join(rootDir, 'Photos')));
 
 // Инициализация базы данных
 const dbPath = path.join(__dirname, 'database.db');
@@ -32,6 +40,51 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
+// Маршруты для HTML страниц
+app.get('/', (req, res) => {
+    res.sendFile(path.join(rootDir, 'Web.html'));
+});
+
+app.get('/Web.html', (req, res) => {
+    res.sendFile(path.join(rootDir, 'Web.html'));
+});
+
+app.get('/login.html', (req, res) => {
+    res.sendFile(path.join(rootDir, 'login.html'));
+});
+
+app.get('/register.html', (req, res) => {
+    res.sendFile(path.join(rootDir, 'register.html'));
+});
+
+app.get('/cabinet.html', (req, res) => {
+    res.sendFile(path.join(rootDir, 'cabinet.html'));
+});
+
+app.get('/admin.html', (req, res) => {
+    res.sendFile(path.join(rootDir, 'admin.html'));
+});
+
+app.get('/Bid.html', (req, res) => {
+    res.sendFile(path.join(rootDir, 'Bid.html'));
+});
+
+app.get('/Calc.html', (req, res) => {
+    res.sendFile(path.join(rootDir, 'Calc.html'));
+});
+
+app.get('/About.html', (req, res) => {
+    res.sendFile(path.join(rootDir, 'About.html'));
+});
+
+app.get('/services.html', (req, res) => {
+    res.sendFile(path.join(rootDir, 'services.html'));
+});
+
+app.get('/Contacts.html', (req, res) => {
+    res.sendFile(path.join(rootDir, 'Contacts.html'));
+});
+
 // Простой маршрут для проверки работы сервера
 app.get('/api/health', (req, res) => {
     res.json({ 
@@ -41,14 +94,9 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static(__dirname));
-
 // Инициализация таблиц
 function initializeDatabase() {
-    const sqlPath = path.join(__dirname, 'CARGO-TRANSPORTATION.db.sql');
+    const sqlPath = path.join(rootDir, 'CARGO-TRANSPORTATION.db.sql');
     let sql = '';
     
     try {
@@ -75,6 +123,7 @@ function initializeDatabase() {
                 "name" TEXT,
                 "email" TEXT,
                 "phone" TEXT,
+                "role" TEXT DEFAULT 'user',
                 "created_at" TEXT DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS "contacts" (
@@ -107,26 +156,59 @@ function initializeDatabase() {
             }
         });
         
-        // Создаем тестового пользователя после инициализации
+        // Создаем тестового пользователя и админа после инициализации
         setTimeout(() => {
             createTestUser();
+            createAdminUser();
+            // Добавляем поле role если его нет
+            addRoleColumnIfNotExists();
         }, 1000);
+    });
+}
+
+// Добавление поля role в таблицу если его нет
+function addRoleColumnIfNotExists() {
+    db.all("PRAGMA table_info(client_auth)", [], (err, rows) => {
+        if (err) {
+            console.log('Ошибка при проверке структуры таблицы:', err.message);
+            return;
+        }
+        
+        const hasRoleColumn = rows && rows.some(row => row.name === 'role');
+        if (!hasRoleColumn) {
+            db.run("ALTER TABLE client_auth ADD COLUMN role TEXT DEFAULT 'user'", (err) => {
+                if (err) {
+                    // Игнорируем ошибку если колонка уже существует
+                    if (!err.message.includes('duplicate column')) {
+                        console.log('Ошибка при добавлении поля role:', err.message);
+                    }
+                } else {
+                    console.log('✅ Поле role добавлено в таблицу client_auth');
+                    // Обновляем существующих пользователей
+                    db.run("UPDATE client_auth SET role = 'user' WHERE role IS NULL", (err) => {
+                        if (err) {
+                            console.log('Ошибка при обновлении ролей:', err.message);
+                        }
+                    });
+                }
+            });
+        }
     });
 }
 
 // Создание тестового пользователя если его нет
 function createTestUser() {
-    db.get('SELECT COUNT(*) as count FROM client_auth', [], (err, row) => {
+    db.get('SELECT * FROM client_auth WHERE login = ?', ['test'], (err, user) => {
         if (err) {
-            console.log('Ошибка при проверке пользователей:', err.message);
+            console.log('Ошибка при проверке тестового пользователя:', err.message);
             return;
         }
         
-        if (row.count === 0) {
+        if (!user) {
             const testPassword = bcrypt.hashSync('123456', 10);
             db.run(
-                'INSERT INTO client_auth (login, password) VALUES (?, ?)',
-                ['test', testPassword],
+                'INSERT INTO client_auth (login, password, role) VALUES (?, ?, ?)',
+                ['test', testPassword, 'user'],
                 function(err) {
                     if (err) {
                         console.log('Не удалось создать тестового пользователя:', err.message);
@@ -135,16 +217,51 @@ function createTestUser() {
                     }
                 }
             );
+        }
+    });
+}
+
+// Создание администратора если его нет
+function createAdminUser() {
+    db.get('SELECT * FROM client_auth WHERE login = ?', ['admin'], (err, user) => {
+        if (err) {
+            console.log('Ошибка при проверке администратора:', err.message);
+            return;
+        }
+        
+        if (!user) {
+            const adminPassword = bcrypt.hashSync('admin123', 10);
+            db.run(
+                'INSERT INTO client_auth (login, password, role, name, email, phone) VALUES (?, ?, ?, ?, ?, ?)',
+                ['admin', adminPassword, 'admin', 'Администратор', 'admin@cargo.ru', '+375 (29) 000-00-00'],
+                function(err) {
+                    if (err) {
+                        console.log('Не удалось создать администратора:', err.message);
+                    } else {
+                        console.log('✅ Создан администратор: login=admin, password=admin123');
+                    }
+                }
+            );
         } else {
-            console.log('✅ Пользователи уже существуют в базе');
+            // Обновляем роль существующего админа если нужно
+            if (user.role !== 'admin') {
+                db.run('UPDATE client_auth SET role = ? WHERE login = ?', ['admin', 'admin'], (err) => {
+                    if (err) {
+                        console.log('Ошибка при обновлении роли администратора:', err.message);
+                    } else {
+                        console.log('✅ Роль администратора обновлена для пользователя admin');
+                    }
+                });
+            }
         }
     });
 }
 
 // Middleware для проверки JWT токена
 function authenticateToken(req, res, next) {
-    // Для регистрации и входа не требуется токен
-    if (req.path === '/api/register' || req.path === '/api/login' || req.path.startsWith('/api/contacts')) {
+    // Для регистрации, входа и публичных контактов не требуется токен
+    if (req.path === '/api/register' || req.path === '/api/login' || 
+        (req.path === '/api/contacts' && req.method === 'POST')) {
         return next();
     }
 
@@ -164,8 +281,8 @@ function authenticateToken(req, res, next) {
     });
 }
 
-// Применяем middleware аутентификации
-app.use('/api', authenticateToken);
+// Применяем middleware аутентификации только к защищенным маршрутам
+// Регистрация, вход и публичные контакты не требуют токена
 
 // ==================== РЕГИСТРАЦИЯ И ВХОД ====================
 
@@ -216,7 +333,8 @@ app.post('/api/register', async (req, res) => {
                         // Создаем JWT токен
                         const token = jwt.sign({ 
                             id: this.lastID, 
-                            login: login 
+                            login: login,
+                            role: 'user'
                         }, JWT_SECRET, { expiresIn: '24h' });
 
                         console.log('Пользователь успешно зарегистрирован:', { id: this.lastID, login });
@@ -225,7 +343,8 @@ app.post('/api/register', async (req, res) => {
                             success: true,
                             user: { 
                                 id: this.lastID, 
-                                login: login 
+                                login: login,
+                                role: 'user'
                             },
                             token: token
                         });
@@ -274,10 +393,11 @@ app.post('/api/login', (req, res) => {
             // Создаем JWT токен
             const token = jwt.sign({ 
                 id: user.id, 
-                login: user.login 
+                login: user.login,
+                role: user.role || 'user'
             }, JWT_SECRET, { expiresIn: '24h' });
 
-            console.log('Пользователь успешно вошел:', { id: user.id, login });
+            console.log('Пользователь успешно вошел:', { id: user.id, login, role: user.role || 'user' });
 
             res.json({
                 success: true,
@@ -286,7 +406,8 @@ app.post('/api/login', (req, res) => {
                     login: user.login,
                     name: user.name,
                     email: user.email,
-                    phone: user.phone
+                    phone: user.phone,
+                    role: user.role || 'user'
                 },
                 token: token
             });
@@ -300,7 +421,7 @@ app.post('/api/login', (req, res) => {
 // ==================== ЗАЯВКИ (BIDS) ====================
 
 // Получить заявки (все или только текущего пользователя при mine=true)
-app.get('/api/bids', (req, res) => {
+app.get('/api/bids', authenticateToken, (req, res) => {
     const onlyMine = String(req.query.mine || '').toLowerCase() === 'true';
     
     let sql, params;
@@ -323,7 +444,7 @@ app.get('/api/bids', (req, res) => {
 });
 
 // Создать заявку
-app.post('/api/bids', (req, res) => {
+app.post('/api/bids', authenticateToken, (req, res) => {
     const { name, wherefrom, towhere, weight, type, date } = req.body;
 
     console.log('Создание заявки:', { name, wherefrom, towhere, weight, type, date, user: req.user });
@@ -363,7 +484,7 @@ app.post('/api/bids', (req, res) => {
 });
 
 // Обновить статус заявки
-app.patch('/api/bids/:id', (req, res) => {
+app.patch('/api/bids/:id', authenticateToken, (req, res) => {
     const id = req.params.id;
     const { status } = req.body;
 
@@ -389,8 +510,8 @@ app.patch('/api/bids/:id', (req, res) => {
 
 // ==================== КОНТАКТЫ (CONTACTS) ====================
 
-// Получить все контакты
-app.get('/api/contacts', (req, res) => {
+// Получить все контакты (требует аутентификации для админов)
+app.get('/api/contacts', authenticateToken, (req, res) => {
     db.all('SELECT * FROM contacts ORDER BY id DESC', [], (err, contacts) => {
         if (err) {
             console.error('Ошибка при получении контактов:', err);
@@ -433,7 +554,7 @@ app.post('/api/contacts', (req, res) => {
 // ==================== АДМИН ПАНЕЛЬ - СТАТИСТИКА ====================
 
 // Получить статистику
-app.get('/api/admin/stats', (req, res) => {
+app.get('/api/admin/stats', authenticateToken, (req, res) => {
     const stats = {};
 
     // Статистика заявок
@@ -467,7 +588,7 @@ app.get('/api/admin/stats', (req, res) => {
 });
 
 // Обновление профиля пользователя
-app.patch('/api/user/profile', (req, res) => {
+app.patch('/api/user/profile', authenticateToken, (req, res) => {
     const { name, email, phone } = req.body;
     
     if (!req.user || !req.user.id) {
