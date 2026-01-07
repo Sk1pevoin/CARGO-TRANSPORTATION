@@ -28,6 +28,21 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Загрузка данных из калькулятора, если они есть
             loadCalculatorData();
+            
+            // Проверка на отрицательные значения для веса
+            const weightValueInput = document.getElementById('weightValue');
+            if (weightValueInput) {
+                weightValueInput.addEventListener('input', function() {
+                    if (this.value < 0) {
+                        this.value = 0;
+                    }
+                });
+                weightValueInput.addEventListener('blur', function() {
+                    if (this.value <= 0) {
+                        this.value = '';
+                    }
+                });
+            }
         }
 
         // Обработка формы добавления транспорта
@@ -214,14 +229,42 @@ function loadCalculatorData() {
             const form = document.getElementById('zayavkaForm');
             
             if (form && data) {
-                if (data.wherefrom) form.querySelector('input[name="otkuda"]').value = data.wherefrom;
-                if (data.towhere) form.querySelector('input[name="kuda"]').value = data.towhere;
-                if (data.weight) {
-                    form.querySelector('#weightValue').value = data.weight;
-                    form.querySelector('#weightUnit').value = 'кг';
+                // Заполняем поля формы
+                const fromInput = form.querySelector('input[name="otkuda"]');
+                const toInput = form.querySelector('input[name="kuda"]');
+                const weightValueInput = form.querySelector('#weightValue');
+                const weightUnitSelect = form.querySelector('#weightUnit');
+                const typeSelect = form.querySelector('select[name="tip"]');
+                const dateInput = form.querySelector('input[name="date"]');
+                
+                if (fromInput && data.wherefrom) {
+                    fromInput.value = data.wherefrom;
                 }
-                if (data.type) form.querySelector('select[name="tip"]').value = data.type;
-                if (data.date) form.querySelector('input[name="date"]').value = data.date;
+                if (toInput && data.towhere) {
+                    toInput.value = data.towhere;
+                }
+                if (weightValueInput && data.weight) {
+                    weightValueInput.value = data.weight;
+                }
+                if (weightUnitSelect) {
+                    weightUnitSelect.value = 'кг';
+                }
+                if (typeSelect && data.type) {
+                    // Ищем соответствующий вариант в select
+                    const options = Array.from(typeSelect.options);
+                    const matchingOption = options.find(opt => opt.textContent.trim() === data.type);
+                    if (matchingOption) {
+                        typeSelect.value = matchingOption.value;
+                    } else {
+                        typeSelect.value = typeSelect.options[0].value; // По умолчанию первый вариант
+                    }
+                }
+                if (dateInput && data.date) {
+                    dateInput.value = data.date;
+                }
+                
+                // Показываем уведомление о загрузке данных
+                showSuccess('Данные из калькулятора загружены в форму');
                 
                 // Удаляем данные после загрузки
                 sessionStorage.removeItem('calculator_bid_data');
